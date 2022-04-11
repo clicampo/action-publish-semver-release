@@ -139,15 +139,11 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const lastVersion = yield (0, git_1.getLastGitTag)();
-            if (lastVersion === null) {
-                core.setFailed('Could not get last git tag');
-                return;
-            }
+            if (lastVersion === null)
+                return core.setFailed('Could not get last git tag');
             const lastCommitMessage = yield (0, git_1.getLastCommitMessage)();
-            if (lastCommitMessage === null) {
-                core.setFailed('Could not get last commit message');
-                return;
-            }
+            if (lastCommitMessage === null)
+                return core.setFailed('Could not get last commit message');
             const releaseType = (0, version_1.getReleaseTypeFromCommitMessage)(lastCommitMessage);
             if (releaseType !== null) {
                 const nextVersion = (0, version_1.getNextVersion)(lastVersion, releaseType);

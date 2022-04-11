@@ -7,16 +7,12 @@ import { getNextVersion, getReleaseTypeFromCommitMessage } from './version'
 async function run(): Promise<void> {
     try {
         const lastVersion = await getLastGitTag()
-        if (lastVersion === null) {
-            core.setFailed('Could not get last git tag')
-            return
-        }
+        if (lastVersion === null)
+            return core.setFailed('Could not get last git tag')
 
         const lastCommitMessage = await getLastCommitMessage()
-        if (lastCommitMessage === null) {
-            core.setFailed('Could not get last commit message')
-            return
-        }
+        if (lastCommitMessage === null)
+            return core.setFailed('Could not get last commit message')
 
         const releaseType = getReleaseTypeFromCommitMessage(lastCommitMessage)
         if (releaseType !== null) {
