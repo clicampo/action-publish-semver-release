@@ -1,17 +1,34 @@
 import * as core from '@actions/core'
-import { wait } from './wait'
+import { context } from '@actions/github'
+import { generateChangelog } from './changelog'
+import { getLastCommitMessage, getLastGitTag } from './git'
+import { getNextVersion, getReleaseTypeFromCommitMessage } from './version'
 
 async function run(): Promise<void> {
     try {
-        const ms: string = core.getInput('milliseconds')
-        // debug is only outputted if you set the secret `ACTIONS_STEP_DEBUG` to true
-        core.debug(`Waiting ${ms} milliseconds ...`)
+        const lastVersion = await getLastGitTag()
+        if (lastVersion === null) {
+            core.setFailed('Could not get last git tag')
+            return
+        }
 
-        core.debug(new Date().toTimeString())
-        await wait(parseInt(ms, 10))
-        core.debug(new Date().toTimeString())
+        const lastCommitMessage = await getLastCommitMessage()
+        if (lastCommitMessage === null) {
+            core.setFailed('Could not get last commit message')
+            return
+        }
 
-        core.setOutput('time', new Date().toTimeString())
+        const releaseType = getReleaseTypeFromCommitMessage(lastCommitMessage)
+        if (releaseType !== null) {
+            const nextVersion = getNextVersion(lastVersion, releaseType)
+            core.info(`Publishing a release candidate for version ${nextVersion}`)
+
+            const changelog = await generateChangelog(context)
+            core.info(changelog)
+        }
+        else {
+            core.info('✅ No new releases to be published!')
+        }
     }
     catch (error) {
         if (error instanceof Error)
