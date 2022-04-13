@@ -1,11 +1,12 @@
-<p align="center">
+<div align="center">
 
 <h1>Publish SemVer Release</h1>
+
 <sup><strong>GitHub Action</strong></sup>
 
-</p>
+</div>
 
----
+
 ## Usage
 
 ```yaml
@@ -20,6 +21,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
       - uses: clicampo/action-publish-semver-release@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
