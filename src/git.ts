@@ -17,7 +17,7 @@ export const getLastGitTag = async(): Promise<string | null> => {
 export const getLastCommitMessage = async(): Promise<string | null> => {
     try {
         const { stdout: lastCommitMessage, exitCode } = await getExecOutput(
-            'git log -1 --pretty=%B',
+            'git log -1 --pretty=%B --no-merges',
         )
         if (exitCode !== 0)
             return null
