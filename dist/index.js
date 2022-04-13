@@ -78,7 +78,7 @@ const getLastGitTag = () => __awaiter(void 0, void 0, void 0, function* () {
 exports.getLastGitTag = getLastGitTag;
 const getLastCommitMessage = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { stdout: lastCommitMessage, exitCode } = yield (0, exec_1.getExecOutput)('git log -1 --pretty=%B');
+        const { stdout: lastCommitMessage, exitCode } = yield (0, exec_1.getExecOutput)('git log -1 --pretty=%B --no-merges');
         if (exitCode !== 0)
             return null;
         return lastCommitMessage;
@@ -144,7 +144,9 @@ function run() {
             const lastCommitMessage = yield (0, git_1.getLastCommitMessage)();
             if (lastCommitMessage === null)
                 return core.setFailed('Could not get last commit message');
+            core.info(`Last commit message: ${lastCommitMessage}`);
             const releaseType = (0, version_1.getReleaseTypeFromCommitMessage)(lastCommitMessage);
+            core.info(`Release type: ${releaseType}`);
             if (releaseType !== null) {
                 const nextVersion = (0, version_1.getNextVersion)(lastVersion, releaseType);
                 core.info(`Publishing a release candidate for version ${nextVersion}`);
