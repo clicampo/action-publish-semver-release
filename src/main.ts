@@ -13,8 +13,11 @@ async function run(): Promise<void> {
         const lastCommitMessage = await getLastCommitMessage()
         if (lastCommitMessage === null)
             return core.setFailed('Could not get last commit message')
+        core.debug(`Last commit message: ${lastCommitMessage}`)
 
         const releaseType = getReleaseTypeFromCommitMessage(lastCommitMessage)
+        core.debug(`Release type: ${releaseType}`)
+
         if (releaseType !== null) {
             const nextVersion = getNextVersion(lastVersion, releaseType)
             core.info(`Publishing a release candidate for version ${nextVersion}`)
