@@ -21,7 +21,10 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
+      # This is necessary so our action has access to the entire git history
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - uses: clicampo/action-publish-semver-release@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
