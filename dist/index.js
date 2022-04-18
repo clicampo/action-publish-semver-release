@@ -272,7 +272,7 @@ const createGithubRelease = (context, nextVersion, body) => __awaiter(void 0, vo
             tag_name: nextVersion,
             name: nextVersion,
             body,
-            prerelease: true,
+            draft: true,
         });
         core.info(`Created release at ${releaseUrl}`);
         core.endGroup();
@@ -348,8 +348,10 @@ function run() {
             if (releaseType !== null) {
                 const nextVersion = (0, version_1.getNextVersion)(lastVersion, releaseType);
                 core.info(`Publishing a release candidate for version ${nextVersion}`);
+                core.startGroup('Generating changelog');
                 const changelog = yield (0, changelog_1.generateChangelog)(github_1.context);
                 core.info(changelog);
+                core.endGroup();
                 // Tag commit with the next version release candidate
                 yield (0, git_1.tagReleaseCandidate)(nextVersion);
                 yield (0, github_2.createGithubRelease)(github_1.context, `${nextVersion}-rc`, changelog);

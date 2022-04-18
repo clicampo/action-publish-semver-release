@@ -23,7 +23,7 @@ export const createGithubRelease = async(context: Context, nextVersion: string, 
                 tag_name: nextVersion,
                 name: nextVersion,
                 body,
-                prerelease: true,
+                draft: true,
             },
         )
         core.info(`Created release at ${releaseUrl}`)
