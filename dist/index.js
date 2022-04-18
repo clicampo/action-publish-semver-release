@@ -167,6 +167,7 @@ const getLastCommitMessage = () => __awaiter(void 0, void 0, void 0, function* (
         const { stdout: lastCommitMessage, exitCode } = yield (0, exec_1.getExecOutput)('git log -1 --pretty=%B --no-merges', [], { silent: true });
         if (exitCode !== 0)
             throw Error;
+        core.endGroup();
         return lastCommitMessage;
     }
     catch (e) {
@@ -196,8 +197,8 @@ const setGitCommiter = () => __awaiter(void 0, void 0, void 0, function* () {
 });
 const tagReleaseCandidate = (nextVersion) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        core.startGroup('Tagging release candidate');
         yield setGitCommiter();
+        core.startGroup('Tagging release candidate');
         const { exitCode: tagExitCode } = yield (0, exec_1.getExecOutput)(`git tag -a ${nextVersion}-rc -m "Release candidate for ${nextVersion}"`);
         if (tagExitCode !== 0)
             throw Error;
@@ -279,6 +280,7 @@ const createGithubRelease = (context, nextVersion, body) => __awaiter(void 0, vo
     }
     catch (e) {
         core.info('Could not create GitHub release');
+        console.log(e);
         core.error(e.message);
         core.setFailed(e.message);
     }

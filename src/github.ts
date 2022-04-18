@@ -32,6 +32,7 @@ export const createGithubRelease = async(context: Context, nextVersion: string, 
     }
     catch (e: any) {
         core.info('Could not create GitHub release')
+        console.log(e)
         core.error(e.message)
         core.setFailed(e.message)
     }

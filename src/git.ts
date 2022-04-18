@@ -30,7 +30,7 @@ export const getLastCommitMessage = async(): Promise<string | null> => {
         )
         if (exitCode !== 0)
             throw Error
-
+        core.endGroup()
         return lastCommitMessage
     }
     catch (e) {
@@ -72,9 +72,8 @@ const setGitCommiter = async(): Promise<void> => {
 
 export const tagReleaseCandidate = async(nextVersion: string): Promise<void | null> => {
     try {
-        core.startGroup('Tagging release candidate')
-
         await setGitCommiter()
+        core.startGroup('Tagging release candidate')
         const { exitCode: tagExitCode } = await getExecOutput(
             `git tag -a ${nextVersion}-rc -m "Release candidate for ${nextVersion}"`,
         )
