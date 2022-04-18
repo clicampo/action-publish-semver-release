@@ -20,8 +20,9 @@ exports.generateChangelog = void 0;
 const core_1 = __nccwpck_require__(3031);
 const exec_1 = __nccwpck_require__(7000);
 const github_1 = __nccwpck_require__(2737);
+const version_1 = __nccwpck_require__(2308);
 const run = (command) => __awaiter(void 0, void 0, void 0, function* () { return (yield (0, exec_1.getExecOutput)(command)).stdout; });
-const generateChangelog = (context) => __awaiter(void 0, void 0, void 0, function* () {
+const getLastCommits = (context) => __awaiter(void 0, void 0, void 0, function* () {
     const githubToken = (0, core_1.getInput)('github-token') || process.env.GH_TOKEN;
     if (githubToken === '' || githubToken === undefined)
         throw new Error('GitHub token is required');
@@ -33,14 +34,70 @@ const generateChangelog = (context) => __awaiter(void 0, void 0, void 0, functio
         owner: context.repo.owner,
         repo: context.repo.repo,
     });
-    // Get all commits since last tag
     const lastCommits = [];
     for (const commit of commits) {
         if (commit.sha === lastTaggedCommitSha)
             break;
         lastCommits.push(commit);
     }
-    return lastCommits.map(commit => `- ${commit.commit.message}`).join('\n');
+    return lastCommits;
+});
+const groupCommitsByReleaseType = (commits) => {
+    return commits
+        .map((commit) => {
+        const { message, url, author } = commit.commit;
+        const type = (0, version_1.getReleaseTypeFromCommitMessage)(message);
+        return { message, type, url, author: String(author === null || author === void 0 ? void 0 : author.name) };
+    })
+        .reduce((commitsByType, commit) => {
+        if (commit.type === null)
+            return commitsByType;
+        if (!(commit.type in commitsByType))
+            commitsByType[commit.type] = [];
+        commitsByType[commit.type].push(commit);
+        return commitsByType;
+    }, {});
+};
+const formatCommitsByType = (commitsByType) => {
+    let changelog = '';
+    const getCommitInfo = (commit) => {
+        var _a, _b, _c;
+        const message = commit.message.split(':')[1].trim();
+        const scope = (_b = (_a = commit.message.match(/^(.*?): /)) === null || _a === void 0 ? void 0 : _a[1]) !== null && _b !== void 0 ? _b : '';
+        const commitSha = (_c = commit.url.split('/').pop()) === null || _c === void 0 ? void 0 : _c.slice(0, 8);
+        return { message, scope, commitSha };
+    };
+    if (commitsByType.major) {
+        changelog += `${[
+            '## ⚠️ This release introduces breaking changes',
+            '### Features',
+        ].join('\n')}\n`;
+    }
+    if (commitsByType.minor) {
+        if (!commitsByType.major)
+            changelog += '### Features\n';
+        const featureCommits = [
+            ...(commitsByType.major || []),
+            ...(commitsByType.minor || []),
+        ];
+        for (const commit of featureCommits) {
+            const { message, scope, commitSha } = getCommitInfo(commit);
+            changelog += `- **(${scope})** ${message} ([${commitSha}](${commit.url}))\n`;
+        }
+    }
+    if (commitsByType.patch) {
+        changelog += '### Bug Fixes\n';
+        for (const commit of commitsByType.patch) {
+            const { message, scope, commitSha } = getCommitInfo(commit);
+            changelog += `- **(${scope})** ${message} ([${commitSha}](${commit.url}))\n`;
+        }
+    }
+    return changelog;
+};
+const generateChangelog = (context) => __awaiter(void 0, void 0, void 0, function* () {
+    const lastCommits = yield getLastCommits(context);
+    const commitsByType = groupCommitsByReleaseType(lastCommits);
+    return formatCommitsByType(commitsByType);
 });
 exports.generateChangelog = generateChangelog;
 
@@ -48,6 +105,96 @@ exports.generateChangelog = generateChangelog;
 /***/ }),
 
 /***/ 3008:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.tagReleaseCandidate = exports.getLastCommitMessage = exports.getLastGitTag = void 0;
+const exec_1 = __nccwpck_require__(7000);
+const core = __importStar(__nccwpck_require__(3031));
+const getLastGitTag = () => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        core.startGroup('Getting last git tag');
+        const { stdout: lastGitTag, exitCode } = yield (0, exec_1.getExecOutput)('git describe --tags --abbrev=0', [], { silent: true });
+        if (exitCode !== 0)
+            throw Error;
+        core.endGroup();
+        return lastGitTag;
+    }
+    catch (e) {
+        core.error('Could not get last git tag');
+        return null;
+    }
+});
+exports.getLastGitTag = getLastGitTag;
+const getLastCommitMessage = () => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        core.startGroup('Getting last commit message');
+        const { stdout: lastCommitMessage, exitCode } = yield (0, exec_1.getExecOutput)('git log -1 --pretty=%B --no-merges', [], { silent: true });
+        if (exitCode !== 0)
+            throw Error;
+        return lastCommitMessage;
+    }
+    catch (e) {
+        core.error('Could not get last commit message');
+        return null;
+    }
+});
+exports.getLastCommitMessage = getLastCommitMessage;
+const tagReleaseCandidate = (nextVersion) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        core.startGroup('Tagging release candidate');
+        const { exitCode: tagExitCode } = yield (0, exec_1.getExecOutput)(`git tag -a ${nextVersion}-rc -m "Release candidate for ${nextVersion}"`, [], { silent: true });
+        if (tagExitCode !== 0)
+            throw Error;
+        const { exitCode: pushExitCode } = yield (0, exec_1.getExecOutput)('git push --tags', [], { silent: true });
+        if (pushExitCode !== 0)
+            throw Error;
+        core.endGroup();
+    }
+    catch (e) {
+        return null;
+    }
+});
+exports.tagReleaseCandidate = tagReleaseCandidate;
+
+
+/***/ }),
+
+/***/ 6742:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -62,32 +209,25 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getLastCommitMessage = exports.getLastGitTag = void 0;
-const exec_1 = __nccwpck_require__(7000);
-const getLastGitTag = () => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { stdout: lastGitTag, exitCode } = yield (0, exec_1.getExecOutput)('git describe --tags --abbrev=0');
-        if (exitCode !== 0)
-            return null;
-        return lastGitTag;
-    }
-    catch (e) {
-        return null;
-    }
+exports.createGithubRelease = void 0;
+const core_1 = __nccwpck_require__(3031);
+const github_1 = __nccwpck_require__(2737);
+const createGithubRelease = (context, nextVersion, body) => __awaiter(void 0, void 0, void 0, function* () {
+    const githubToken = (0, core_1.getInput)('github-token') || process.env.GH_TOKEN;
+    if (githubToken === '' || githubToken === undefined)
+        throw new Error('GitHub token is required');
+    const client = (0, github_1.getOctokit)(githubToken).rest;
+    const { data: { url: releaseUrl, }, } = yield client.repos.createRelease({
+        repo: context.repo.owner,
+        owner: context.repo.repo,
+        tag_name: nextVersion,
+        name: nextVersion,
+        body,
+        prerelease: true,
+    });
+    return releaseUrl;
 });
-exports.getLastGitTag = getLastGitTag;
-const getLastCommitMessage = () => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { stdout: lastCommitMessage, exitCode } = yield (0, exec_1.getExecOutput)('git log -1 --pretty=%B --no-merges');
-        if (exitCode !== 0)
-            return null;
-        return lastCommitMessage;
-    }
-    catch (e) {
-        return null;
-    }
-});
-exports.getLastCommitMessage = getLastCommitMessage;
+exports.createGithubRelease = createGithubRelease;
 
 
 /***/ }),
@@ -134,24 +274,29 @@ const core = __importStar(__nccwpck_require__(3031));
 const github_1 = __nccwpck_require__(2737);
 const changelog_1 = __nccwpck_require__(6293);
 const git_1 = __nccwpck_require__(3008);
+const github_2 = __nccwpck_require__(6742);
 const version_1 = __nccwpck_require__(2308);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const lastVersion = yield (0, git_1.getLastGitTag)();
             if (lastVersion === null)
-                return core.setFailed('Could not get last git tag');
+                return;
             const lastCommitMessage = yield (0, git_1.getLastCommitMessage)();
             if (lastCommitMessage === null)
-                return core.setFailed('Could not get last commit message');
-            core.info(`Last commit message: ${lastCommitMessage}`);
+                return;
             const releaseType = (0, version_1.getReleaseTypeFromCommitMessage)(lastCommitMessage);
-            core.info(`Release type: ${releaseType}`);
+            // If the commit isn't of type `feat` or `fix`, we don't want to bump the version
             if (releaseType !== null) {
                 const nextVersion = (0, version_1.getNextVersion)(lastVersion, releaseType);
                 core.info(`Publishing a release candidate for version ${nextVersion}`);
                 const changelog = yield (0, changelog_1.generateChangelog)(github_1.context);
                 core.info(changelog);
+                // Tag commit with the next version release candidate
+                yield (0, git_1.tagReleaseCandidate)(nextVersion);
+                yield (0, github_2.createGithubRelease)(github_1.context, `${nextVersion}-rc`, changelog);
+                core.setOutput('next-version', nextVersion);
+                core.setOutput('release-type', releaseType);
             }
             else {
                 core.info('✅ No new releases to be published!');

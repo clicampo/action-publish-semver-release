@@ -5,6 +5,11 @@ inputs:
     github-token:
         required: true
         description: GitHub personal access token
+outputs:
+    next-version:
+        description: Next version to be released
+    release-type:
+        description: Type of release
 runs:
     using: 'node16'
     main: 'dist/index.js'

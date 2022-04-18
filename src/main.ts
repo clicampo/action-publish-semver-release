@@ -1,29 +1,37 @@
 import * as core from '@actions/core'
 import { context } from '@actions/github'
 import { generateChangelog } from './changelog'
-import { getLastCommitMessage, getLastGitTag } from './git'
+import { getLastCommitMessage, getLastGitTag, tagReleaseCandidate } from './git'
+import { createGithubRelease } from './github'
 import { getNextVersion, getReleaseTypeFromCommitMessage } from './version'
 
 async function run(): Promise<void> {
     try {
         const lastVersion = await getLastGitTag()
         if (lastVersion === null)
-            return core.setFailed('Could not get last git tag')
+            return
 
         const lastCommitMessage = await getLastCommitMessage()
         if (lastCommitMessage === null)
-            return core.setFailed('Could not get last commit message')
-        core.info(`Last commit message: ${lastCommitMessage}`)
+            return
 
         const releaseType = getReleaseTypeFromCommitMessage(lastCommitMessage)
-        core.info(`Release type: ${releaseType}`)
 
+        // If the commit isn't of type `feat` or `fix`, we don't want to bump the version
         if (releaseType !== null) {
             const nextVersion = getNextVersion(lastVersion, releaseType)
             core.info(`Publishing a release candidate for version ${nextVersion}`)
 
             const changelog = await generateChangelog(context)
             core.info(changelog)
+
+            // Tag commit with the next version release candidate
+            await tagReleaseCandidate(nextVersion)
+
+            await createGithubRelease(context, `${nextVersion}-rc`, changelog)
+
+            core.setOutput('next-version', nextVersion)
+            core.setOutput('release-type', releaseType)
         }
         else {
             core.info('✅ No new releases to be published!')

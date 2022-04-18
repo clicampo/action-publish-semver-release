@@ -1,8 +1,8 @@
 {
-    "name": "typescript-action",
-    "version": "0.0.0",
+    "name": "publish-semver-release-action",
+    "version": "0.3.0",
     "private": true,
-    "description": "TypeScript template action",
+    "description": "🚀 A GitHub action to publish a new release of the repository",
     "main": "lib/main.js",
     "scripts": {
         "build": "tsc",
@@ -10,17 +10,16 @@
         "format-check": "prettier --check '**/*.ts'",
         "lint": "eslint src/**/*.ts",
         "package": "ncc build --source-map --license licenses.txt",
+        "publish": "npm run build && npm run package",
         "test": "vitest",
         "all": "npm run build && npm run format && npm run lint && npm run package && npm test"
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/actions/typescript-action.git"
+        "url": "git+https://github.com/clicampo/action-publish-semver-release.git"
     },
     "keywords": [
-        "actions",
-        "node",
-        "setup"
+        "actions"
     ],
     "author": "",
     "license": "MIT",
