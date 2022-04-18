@@ -143,14 +143,22 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.tagReleaseCandidate = exports.getLastCommitMessage = exports.getLastGitTag = void 0;
+exports.deleteTag = exports.tagCommit = exports.getLastCommitMessage = exports.getLastGitTag = void 0;
 const exec_1 = __nccwpck_require__(7000);
 const core = __importStar(__nccwpck_require__(3031));
-const getLastGitTag = () => __awaiter(void 0, void 0, void 0, function* () {
+const getLastGitTag = (considerReleaseCandidates) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         core.startGroup('Getting last git tag');
-        const { stdout: lastGitTag, exitCode } = yield (0, exec_1.getExecOutput)('git describe --tags --abbrev=0', [], { silent: true });
+        const { stdout: gitTagList, exitCode } = yield (0, exec_1.getExecOutput)('git for-each-ref --sort=creatordate --format "%(refname)" refs/tags', [], { silent: true });
         if (exitCode !== 0)
+            throw Error;
+        const lastGitTag = gitTagList
+            .split('\n')
+            .filter(ref => considerReleaseCandidates ? ref : !ref.includes('-rc'))
+            .reverse()[0]
+            .split('/')
+            .pop();
+        if (lastGitTag === undefined)
             throw Error;
         core.endGroup();
         return lastGitTag;
@@ -195,11 +203,11 @@ const setGitCommiter = () => __awaiter(void 0, void 0, void 0, function* () {
         core.error(`Could not set git commiter identity\n${e.message}`);
     }
 });
-const tagReleaseCandidate = (nextVersion) => __awaiter(void 0, void 0, void 0, function* () {
+const tagCommit = (nextVersion, isReleaseCandidate) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         yield setGitCommiter();
-        core.startGroup('Tagging release candidate');
-        const { exitCode: tagExitCode } = yield (0, exec_1.getExecOutput)(`git tag -a ${nextVersion}-rc -m "Release candidate for ${nextVersion}"`);
+        core.startGroup(`Tagging ${isReleaseCandidate ? 'release candidate' : 'version'} ${nextVersion}`);
+        const { exitCode: tagExitCode } = yield (0, exec_1.getExecOutput)(`git tag -a ${nextVersion}${isReleaseCandidate ? '-rc' : ''}`);
         if (tagExitCode !== 0)
             throw Error;
         const { exitCode: pushExitCode } = yield (0, exec_1.getExecOutput)('git push --tags');
@@ -208,11 +216,28 @@ const tagReleaseCandidate = (nextVersion) => __awaiter(void 0, void 0, void 0, f
         core.endGroup();
     }
     catch (e) {
-        core.error('Could not tag release candidate');
+        core.error('Could not tag commit');
         return null;
     }
 });
-exports.tagReleaseCandidate = tagReleaseCandidate;
+exports.tagCommit = tagCommit;
+const deleteTag = (tag) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        core.startGroup('Deleting tag');
+        const { exitCode: deleteTagExitCode } = yield (0, exec_1.getExecOutput)(`git tag -d ${tag}`);
+        if (deleteTagExitCode !== 0)
+            throw Error;
+        const { exitCode: pushExitCode } = yield (0, exec_1.getExecOutput)(`git push --delete origin ${tag}`);
+        if (pushExitCode !== 0)
+            throw Error;
+        core.endGroup();
+    }
+    catch (e) {
+        core.error('Could not delete tag');
+        return null;
+    }
+});
+exports.deleteTag = deleteTag;
 
 
 /***/ }),
@@ -259,20 +284,22 @@ exports.createGithubRelease = void 0;
 const core_1 = __nccwpck_require__(3031);
 const github_1 = __nccwpck_require__(2737);
 const core = __importStar(__nccwpck_require__(3031));
-const createGithubRelease = (context, nextVersion, body) => __awaiter(void 0, void 0, void 0, function* () {
+const git_1 = __nccwpck_require__(3008);
+const createGithubRelease = (context, nextVersion, body, isReleaseCandidate) => __awaiter(void 0, void 0, void 0, function* () {
     core.startGroup('Creating GitHub release');
     const githubToken = (0, core_1.getInput)('github-token') || process.env.GH_TOKEN;
     if (githubToken === '' || githubToken === undefined)
         throw new Error('GitHub token is required');
     const client = (0, github_1.getOctokit)(githubToken).rest;
+    const version = isReleaseCandidate ? `${nextVersion}-rc` : nextVersion;
     try {
-        const { data: { url: releaseUrl, }, } = yield client.repos.createRelease({
+        const { data: { html_url: releaseUrl, }, } = yield client.repos.createRelease({
             repo: context.repo.repo,
             owner: context.repo.owner,
-            tag_name: nextVersion,
-            name: nextVersion,
+            tag_name: version,
+            name: version,
             body,
-            prerelease: true,
+            prerelease: isReleaseCandidate,
         });
         core.info(`Created release at ${releaseUrl}`);
         core.endGroup();
@@ -280,6 +307,8 @@ const createGithubRelease = (context, nextVersion, body) => __awaiter(void 0, vo
     }
     catch (e) {
         core.info('Could not create GitHub release');
+        core.endGroup();
+        yield (0, git_1.deleteTag)(`${nextVersion}`);
         core.error(`${e.status} - ${e.message}`);
     }
 });
@@ -334,8 +363,9 @@ const github_2 = __nccwpck_require__(6742);
 const version_1 = __nccwpck_require__(2308);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
+        const isReleaseCandidate = core.getInput('release-candidate') === 'true';
         try {
-            const lastVersion = yield (0, git_1.getLastGitTag)();
+            const lastVersion = yield (0, git_1.getLastGitTag)(isReleaseCandidate);
             if (lastVersion === null)
                 return;
             const lastCommitMessage = yield (0, git_1.getLastCommitMessage)();
@@ -351,8 +381,8 @@ function run() {
                 core.info(changelog);
                 core.endGroup();
                 // Tag commit with the next version release candidate
-                yield (0, git_1.tagReleaseCandidate)(nextVersion);
-                yield (0, github_2.createGithubRelease)(github_1.context, `${nextVersion}-rc`, changelog);
+                yield (0, git_1.tagCommit)(nextVersion, isReleaseCandidate);
+                yield (0, github_2.createGithubRelease)(github_1.context, nextVersion, changelog, isReleaseCandidate);
                 core.setOutput('next-version', nextVersion);
                 core.setOutput('release-type', releaseType);
             }

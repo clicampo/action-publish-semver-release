@@ -13,6 +13,10 @@ inputs:
         required: true
         description: Git committer email
         default: publish-semver@github.com
+    release-candidate:
+        required: false
+        description: Determines if the release is a release candidate
+        default: 'true'
 outputs:
     next-version:
         description: Next version to be released

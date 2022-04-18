@@ -1,13 +1,15 @@
 import * as core from '@actions/core'
 import { context } from '@actions/github'
 import { generateChangelog } from './changelog'
-import { getLastCommitMessage, getLastGitTag, tagReleaseCandidate } from './git'
+import { getLastCommitMessage, getLastGitTag, tagCommit } from './git'
 import { createGithubRelease } from './github'
 import { getNextVersion, getReleaseTypeFromCommitMessage } from './version'
 
 async function run(): Promise<void> {
+    const isReleaseCandidate = core.getInput('release-candidate') === 'true'
+
     try {
-        const lastVersion = await getLastGitTag()
+        const lastVersion = await getLastGitTag(isReleaseCandidate)
         if (lastVersion === null)
             return
 
@@ -28,9 +30,9 @@ async function run(): Promise<void> {
             core.endGroup()
 
             // Tag commit with the next version release candidate
-            await tagReleaseCandidate(nextVersion)
+            await tagCommit(nextVersion, isReleaseCandidate)
 
-            await createGithubRelease(context, `${nextVersion}-rc`, changelog)
+            await createGithubRelease(context, nextVersion, changelog, isReleaseCandidate)
 
             core.setOutput('next-version', nextVersion)
             core.setOutput('release-type', releaseType)

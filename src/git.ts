@@ -1,15 +1,23 @@
 import { getExecOutput } from '@actions/exec'
 import * as core from '@actions/core'
 
-export const getLastGitTag = async(): Promise<string | null> => {
+export const getLastGitTag = async(considerReleaseCandidates: boolean): Promise<string | null> => {
     try {
         core.startGroup('Getting last git tag')
-        const { stdout: lastGitTag, exitCode } = await getExecOutput(
-            'git describe --tags --abbrev=0',
+        const { stdout: gitTagList, exitCode } = await getExecOutput(
+            'git for-each-ref --sort=creatordate --format "%(refname)" refs/tags',
             [],
             { silent: true },
         )
         if (exitCode !== 0)
+            throw Error
+        const lastGitTag = gitTagList
+            .split('\n')
+            .filter(ref => considerReleaseCandidates ? ref : !ref.includes('-rc'))
+            .reverse()[0]
+            .split('/')
+            .pop()
+        if (lastGitTag === undefined)
             throw Error
         core.endGroup()
         return lastGitTag
@@ -70,12 +78,12 @@ const setGitCommiter = async(): Promise<void> => {
     }
 }
 
-export const tagReleaseCandidate = async(nextVersion: string): Promise<void | null> => {
+export const tagCommit = async(nextVersion: string, isReleaseCandidate: boolean): Promise<void | null> => {
     try {
         await setGitCommiter()
-        core.startGroup('Tagging release candidate')
+        core.startGroup(`Tagging ${isReleaseCandidate ? 'release candidate' : 'version'} ${nextVersion}`)
         const { exitCode: tagExitCode } = await getExecOutput(
-            `git tag -a ${nextVersion}-rc -m "Release candidate for ${nextVersion}"`,
+            `git tag -a ${nextVersion}${isReleaseCandidate ? '-rc' : ''}`,
         )
         if (tagExitCode !== 0)
             throw Error
@@ -89,7 +97,30 @@ export const tagReleaseCandidate = async(nextVersion: string): Promise<void | nu
         core.endGroup()
     }
     catch (e) {
-        core.error('Could not tag release candidate')
+        core.error('Could not tag commit')
+        return null
+    }
+}
+
+export const deleteTag = async(tag: string): Promise<void | null> => {
+    try {
+        core.startGroup('Deleting tag')
+        const { exitCode: deleteTagExitCode } = await getExecOutput(
+            `git tag -d ${tag}`,
+        )
+        if (deleteTagExitCode !== 0)
+            throw Error
+
+        const { exitCode: pushExitCode } = await getExecOutput(
+            `git push --delete origin ${tag}`,
+        )
+        if (pushExitCode !== 0)
+            throw Error
+
+        core.endGroup()
+    }
+    catch (e) {
+        core.error('Could not delete tag')
         return null
     }
 }
