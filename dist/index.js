@@ -267,12 +267,12 @@ const createGithubRelease = (context, nextVersion, body) => __awaiter(void 0, vo
     const client = (0, github_1.getOctokit)(githubToken).rest;
     try {
         const { data: { url: releaseUrl, }, } = yield client.repos.createRelease({
-            repo: context.repo.owner,
-            owner: context.repo.repo,
+            repo: context.repo.repo,
+            owner: context.repo.owner,
             tag_name: nextVersion,
             name: nextVersion,
             body,
-            draft: true,
+            prerelease: true,
         });
         core.info(`Created release at ${releaseUrl}`);
         core.endGroup();
@@ -280,9 +280,7 @@ const createGithubRelease = (context, nextVersion, body) => __awaiter(void 0, vo
     }
     catch (e) {
         core.info('Could not create GitHub release');
-        console.log(e);
-        core.error(e.message);
-        core.setFailed(e.message);
+        core.error(`${e.status} - ${e.message}`);
     }
 });
 exports.createGithubRelease = createGithubRelease;

@@ -18,12 +18,12 @@ export const createGithubRelease = async(context: Context, nextVersion: string, 
             },
         } = await client.repos.createRelease(
             {
-                repo: context.repo.owner,
-                owner: context.repo.repo,
+                repo: context.repo.repo,
+                owner: context.repo.owner,
                 tag_name: nextVersion,
                 name: nextVersion,
                 body,
-                draft: true,
+                prerelease: true,
             },
         )
         core.info(`Created release at ${releaseUrl}`)
@@ -32,8 +32,6 @@ export const createGithubRelease = async(context: Context, nextVersion: string, 
     }
     catch (e: any) {
         core.info('Could not create GitHub release')
-        console.log(e)
-        core.error(e.message)
-        core.setFailed(e.message)
+        core.error(`${e.status} - ${e.message}`)
     }
 }
