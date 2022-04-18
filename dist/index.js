@@ -174,9 +174,29 @@ const getLastCommitMessage = () => __awaiter(void 0, void 0, void 0, function* (
     }
 });
 exports.getLastCommitMessage = getLastCommitMessage;
+const setGitCommiter = () => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const name = core.getInput('git-committer-name');
+        const email = core.getInput('git-committer-email');
+        if (name === '' || email === '')
+            throw new Error('Git committer name and email are required');
+        core.startGroup('Setting git commiter identity');
+        const { exitCode: exitCodeName } = yield (0, exec_1.getExecOutput)(`git config --global user.name "${name}"`, [], { silent: true });
+        if (exitCodeName !== 0)
+            throw new Error('Could not set git commiter name');
+        const { exitCode: exitCodeEmail } = yield (0, exec_1.getExecOutput)(`git config --global user.email "${email}"`, [], { silent: true });
+        if (exitCodeEmail !== 0)
+            throw new Error('Could not set git commiter email');
+        core.endGroup();
+    }
+    catch (e) {
+        core.error(`Could not set git commiter identity\n${e.message}`);
+    }
+});
 const tagReleaseCandidate = (nextVersion) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         core.startGroup('Tagging release candidate');
+        yield setGitCommiter();
         const { exitCode: tagExitCode } = yield (0, exec_1.getExecOutput)(`git tag -a ${nextVersion}-rc -m "Release candidate for ${nextVersion}"`);
         if (tagExitCode !== 0)
             throw Error;
