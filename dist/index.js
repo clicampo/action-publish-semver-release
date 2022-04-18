@@ -259,6 +259,7 @@ const core_1 = __nccwpck_require__(3031);
 const github_1 = __nccwpck_require__(2737);
 const core = __importStar(__nccwpck_require__(3031));
 const createGithubRelease = (context, nextVersion, body) => __awaiter(void 0, void 0, void 0, function* () {
+    core.startGroup('Creating GitHub release');
     const githubToken = (0, core_1.getInput)('github-token') || process.env.GH_TOKEN;
     if (githubToken === '' || githubToken === undefined)
         throw new Error('GitHub token is required');
@@ -272,10 +273,14 @@ const createGithubRelease = (context, nextVersion, body) => __awaiter(void 0, vo
             body,
             prerelease: true,
         });
+        core.info(`Created release at ${releaseUrl}`);
+        core.endGroup();
         return releaseUrl;
     }
     catch (e) {
+        core.info('Could not create GitHub release');
         core.error(e.message);
+        core.setFailed(e.message);
     }
 });
 exports.createGithubRelease = createGithubRelease;
