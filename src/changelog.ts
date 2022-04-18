@@ -43,7 +43,8 @@ const getLastCommits = async(context: Context) => {
 const groupCommitsByReleaseType = (commits: CommitList) => {
     return commits
         .map((commit) => {
-            const { message, url, author } = commit.commit
+            const { html_url: url } = commit
+            const { message, author } = commit.commit
             const type = getReleaseTypeFromCommitMessage(message)
             return { message, type, url, author: String(author?.name) }
         })
@@ -73,7 +74,7 @@ const formatCommitsByType = (commitsByType: CommitsByReleaseType) => {
     }
     if (commitsByType.minor) {
         if (!commitsByType.major)
-            changelog += '### Features\n'
+            changelog += '\n### Features\n'
 
         const featureCommits = [
             ...(commitsByType.major || []),
@@ -81,14 +82,14 @@ const formatCommitsByType = (commitsByType: CommitsByReleaseType) => {
         ]
         for (const commit of featureCommits) {
             const { message, scope, commitSha } = getCommitInfo(commit)
-            changelog += `- **(${scope})** ${message} ([${commitSha}](${commit.url}))\n`
+            changelog += `- ${scope ? `**(${scope})**` : ''} ${message} ([${commitSha}](${commit.url}))\n`
         }
     }
     if (commitsByType.patch) {
-        changelog += '### Bug Fixes\n'
+        changelog += '\n### Bug Fixes\n'
         for (const commit of commitsByType.patch) {
             const { message, scope, commitSha } = getCommitInfo(commit)
-            changelog += `- **(${scope})** ${message} ([${commitSha}](${commit.url}))\n`
+            changelog += `- ${scope ? `**(${scope})**` : ''} ${message} ([${commitSha}](${commit.url}))\n`
         }
     }
 

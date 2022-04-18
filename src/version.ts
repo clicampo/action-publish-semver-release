@@ -11,7 +11,8 @@ export const getReleaseTypeFromCommitMessage = (commitMessage: string): ReleaseT
 }
 
 export const getNextVersion = (currentVersion: string, releaseType: ReleaseType): string => {
-    const [major, minor, patch] = currentVersion.split('.').map(Number)
+    const pureVersion = currentVersion.split('-')[0]
+    const [major, minor, patch] = pureVersion.split('.').map(Number)
     return ({
         major: () => `${major + 1}.0.0`,
         minor: () => `${major}.${minor + 1}.0`,

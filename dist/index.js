@@ -45,7 +45,8 @@ const getLastCommits = (context) => __awaiter(void 0, void 0, void 0, function* 
 const groupCommitsByReleaseType = (commits) => {
     return commits
         .map((commit) => {
-        const { message, url, author } = commit.commit;
+        const { html_url: url } = commit;
+        const { message, author } = commit.commit;
         const type = (0, version_1.getReleaseTypeFromCommitMessage)(message);
         return { message, type, url, author: String(author === null || author === void 0 ? void 0 : author.name) };
     })
@@ -75,21 +76,21 @@ const formatCommitsByType = (commitsByType) => {
     }
     if (commitsByType.minor) {
         if (!commitsByType.major)
-            changelog += '### Features\n';
+            changelog += '\n### Features\n';
         const featureCommits = [
             ...(commitsByType.major || []),
             ...(commitsByType.minor || []),
         ];
         for (const commit of featureCommits) {
             const { message, scope, commitSha } = getCommitInfo(commit);
-            changelog += `- **(${scope})** ${message} ([${commitSha}](${commit.url}))\n`;
+            changelog += `- ${scope ? `**(${scope})**` : ''} ${message} ([${commitSha}](${commit.url}))\n`;
         }
     }
     if (commitsByType.patch) {
-        changelog += '### Bug Fixes\n';
+        changelog += '\n### Bug Fixes\n';
         for (const commit of commitsByType.patch) {
             const { message, scope, commitSha } = getCommitInfo(commit);
-            changelog += `- **(${scope})** ${message} ([${commitSha}](${commit.url}))\n`;
+            changelog += `- ${scope ? `**(${scope})**` : ''} ${message} ([${commitSha}](${commit.url}))\n`;
         }
     }
     return changelog;
@@ -381,7 +382,8 @@ const getReleaseTypeFromCommitMessage = (commitMessage) => {
 };
 exports.getReleaseTypeFromCommitMessage = getReleaseTypeFromCommitMessage;
 const getNextVersion = (currentVersion, releaseType) => {
-    const [major, minor, patch] = currentVersion.split('.').map(Number);
+    const pureVersion = currentVersion.split('-')[0];
+    const [major, minor, patch] = pureVersion.split('.').map(Number);
     return ({
         major: () => `${major + 1}.0.0`,
         minor: () => `${major}.${minor + 1}.0`,
