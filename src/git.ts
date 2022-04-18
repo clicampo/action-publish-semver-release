@@ -44,16 +44,12 @@ export const tagReleaseCandidate = async(nextVersion: string): Promise<void | nu
         core.startGroup('Tagging release candidate')
         const { exitCode: tagExitCode } = await getExecOutput(
             `git tag -a ${nextVersion}-rc -m "Release candidate for ${nextVersion}"`,
-            [],
-            { silent: true },
         )
         if (tagExitCode !== 0)
             throw Error
 
         const { exitCode: pushExitCode } = await getExecOutput(
             'git push --tags',
-            [],
-            { silent: true },
         )
         if (pushExitCode !== 0)
             throw Error
@@ -61,6 +57,7 @@ export const tagReleaseCandidate = async(nextVersion: string): Promise<void | nu
         core.endGroup()
     }
     catch (e) {
+        core.error('Could not tag release candidate')
         return null
     }
 }

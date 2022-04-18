@@ -177,15 +177,16 @@ exports.getLastCommitMessage = getLastCommitMessage;
 const tagReleaseCandidate = (nextVersion) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         core.startGroup('Tagging release candidate');
-        const { exitCode: tagExitCode } = yield (0, exec_1.getExecOutput)(`git tag -a ${nextVersion}-rc -m "Release candidate for ${nextVersion}"`, [], { silent: true });
+        const { exitCode: tagExitCode } = yield (0, exec_1.getExecOutput)(`git tag -a ${nextVersion}-rc -m "Release candidate for ${nextVersion}"`);
         if (tagExitCode !== 0)
             throw Error;
-        const { exitCode: pushExitCode } = yield (0, exec_1.getExecOutput)('git push --tags', [], { silent: true });
+        const { exitCode: pushExitCode } = yield (0, exec_1.getExecOutput)('git push --tags');
         if (pushExitCode !== 0)
             throw Error;
         core.endGroup();
     }
     catch (e) {
+        core.error('Could not tag release candidate');
         return null;
     }
 });
