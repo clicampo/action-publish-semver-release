@@ -61,10 +61,10 @@ const groupCommitsByReleaseType = (commits) => {
 const formatCommitsByType = (commitsByType) => {
     let changelog = '';
     const getCommitInfo = (commit) => {
-        var _a, _b, _c;
-        const message = commit.message.split(':')[1].trim();
-        const scope = (_b = (_a = commit.message.match(/^(.*?): /)) === null || _a === void 0 ? void 0 : _a[1]) !== null && _b !== void 0 ? _b : '';
-        const commitSha = (_c = commit.url.split('/').pop()) === null || _c === void 0 ? void 0 : _c.slice(0, 8);
+        var _a, _b, _c, _d;
+        const message = (_a = commit.message.split(':')[1].split('\n').shift()) === null || _a === void 0 ? void 0 : _a.trim();
+        const scope = (_c = (_b = commit.message.match(/\(([^/)]+)\):/)) === null || _b === void 0 ? void 0 : _b[1]) !== null && _c !== void 0 ? _c : '';
+        const commitSha = (_d = commit.url.split('/').pop()) === null || _d === void 0 ? void 0 : _d.slice(0, 8);
         return { message, scope, commitSha };
     };
     if (commitsByType.major) {
@@ -220,6 +220,29 @@ exports.tagReleaseCandidate = tagReleaseCandidate;
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -233,20 +256,26 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.createGithubRelease = void 0;
 const core_1 = __nccwpck_require__(3031);
 const github_1 = __nccwpck_require__(2737);
+const core = __importStar(__nccwpck_require__(3031));
 const createGithubRelease = (context, nextVersion, body) => __awaiter(void 0, void 0, void 0, function* () {
     const githubToken = (0, core_1.getInput)('github-token') || process.env.GH_TOKEN;
     if (githubToken === '' || githubToken === undefined)
         throw new Error('GitHub token is required');
     const client = (0, github_1.getOctokit)(githubToken).rest;
-    const { data: { url: releaseUrl, }, } = yield client.repos.createRelease({
-        repo: context.repo.owner,
-        owner: context.repo.repo,
-        tag_name: nextVersion,
-        name: nextVersion,
-        body,
-        prerelease: true,
-    });
-    return releaseUrl;
+    try {
+        const { data: { url: releaseUrl, }, } = yield client.repos.createRelease({
+            repo: context.repo.owner,
+            owner: context.repo.repo,
+            tag_name: nextVersion,
+            name: nextVersion,
+            body,
+            prerelease: true,
+        });
+        return releaseUrl;
+    }
+    catch (e) {
+        core.error(e.message);
+    }
 });
 exports.createGithubRelease = createGithubRelease;
 

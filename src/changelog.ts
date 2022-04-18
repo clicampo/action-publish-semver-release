@@ -60,8 +60,8 @@ const groupCommitsByReleaseType = (commits: CommitList) => {
 const formatCommitsByType = (commitsByType: CommitsByReleaseType) => {
     let changelog = ''
     const getCommitInfo = (commit: { message: string; url: string; author: string }) => {
-        const message = commit.message.split(':')[1].trim()
-        const scope = commit.message.match(/^(.*?): /)?.[1] ?? ''
+        const message = commit.message.split(':')[1].split('\n').shift()?.trim()
+        const scope = commit.message.match(/\(([^/)]+)\):/)?.[1] ?? ''
         const commitSha = commit.url.split('/').pop()?.slice(0, 8)
         return { message, scope, commitSha }
     }
