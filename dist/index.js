@@ -152,13 +152,14 @@ const getLastGitTag = (considerReleaseCandidates) => __awaiter(void 0, void 0, v
         const { stdout: gitTagList, exitCode } = yield (0, exec_1.getExecOutput)('git for-each-ref --sort=creatordate --format "%(refname)" refs/tags');
         if (exitCode !== 0)
             throw Error;
-        console.log(`${gitTagList.split('\n').filter(ref => considerReleaseCandidates ? true : !ref.includes('-rc')).length} tags found`);
-        const lastGitTag = gitTagList
+        const filteredTags = gitTagList
             .split('\n')
-            .filter(ref => considerReleaseCandidates ? true : !ref.includes('-rc'))
+            .filter(ref => considerReleaseCandidates ? true : !ref.includes('-rc'));
+        const lastGitTag = filteredTags
             .reverse()[0]
             .split('/')
             .pop();
+        console.log(`${filteredTags.length} tags found`, filteredTags, filteredTags.reverse()[0], filteredTags.reverse()[0].split('/'), filteredTags.reverse()[0].split('/').pop());
         if (lastGitTag === undefined || lastGitTag === '') {
             core.info('No git tag found.');
             throw Error;
