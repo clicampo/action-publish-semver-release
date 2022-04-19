@@ -154,12 +154,14 @@ const getLastGitTag = (considerReleaseCandidates) => __awaiter(void 0, void 0, v
             throw Error;
         const filteredTags = gitTagList
             .split('\n')
-            .filter(ref => considerReleaseCandidates ? true : !ref.includes('-rc'));
+            .filter(ref => 
+        // Ensure that the line isn't empty, then check against
+        // the release candidate option input
+        Boolean(ref) && considerReleaseCandidates ? true : !ref.includes('-rc'));
         const lastGitTag = filteredTags
             .reverse()[0]
             .split('/')
             .pop();
-        console.log(`${filteredTags.length} tags found`, filteredTags, filteredTags.reverse()[0], filteredTags.reverse()[0].split('/'), filteredTags.reverse()[0].split('/').pop());
         if (lastGitTag === undefined || lastGitTag === '') {
             core.info('No git tag found.');
             throw Error;
