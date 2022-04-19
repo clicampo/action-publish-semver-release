@@ -9,7 +9,7 @@ export const getLastGitTag = async(considerReleaseCandidates: boolean): Promise<
         )
         if (exitCode !== 0)
             throw Error
-        core.info(gitTagList)
+        console.log(`${gitTagList.split('\n').filter(ref => considerReleaseCandidates ? true : !ref.includes('-rc')).length} tags found`)
         const lastGitTag = gitTagList
             .split('\n')
             .filter(ref => considerReleaseCandidates ? true : !ref.includes('-rc'))

@@ -152,7 +152,7 @@ const getLastGitTag = (considerReleaseCandidates) => __awaiter(void 0, void 0, v
         const { stdout: gitTagList, exitCode } = yield (0, exec_1.getExecOutput)('git for-each-ref --sort=creatordate --format "%(refname)" refs/tags');
         if (exitCode !== 0)
             throw Error;
-        core.info(gitTagList);
+        console.log(`${gitTagList.split('\n').filter(ref => considerReleaseCandidates ? true : !ref.includes('-rc')).length} tags found`);
         const lastGitTag = gitTagList
             .split('\n')
             .filter(ref => considerReleaseCandidates ? true : !ref.includes('-rc'))
