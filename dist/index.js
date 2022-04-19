@@ -154,12 +154,15 @@ const getLastGitTag = (considerReleaseCandidates) => __awaiter(void 0, void 0, v
             throw Error;
         const lastGitTag = gitTagList
             .split('\n')
-            .filter(ref => considerReleaseCandidates ? ref : !ref.includes('-rc'))
+            .filter(ref => considerReleaseCandidates ? true : !ref.includes('-rc'))
             .reverse()[0]
             .split('/')
             .pop();
-        if (lastGitTag === undefined)
+        if (lastGitTag === undefined) {
+            core.info('No git tag found.');
             throw Error;
+        }
+        core.info(`Last git tag: ${lastGitTag}`);
         core.endGroup();
         return lastGitTag;
     }
@@ -197,6 +200,7 @@ const setGitCommiter = () => __awaiter(void 0, void 0, void 0, function* () {
         const { exitCode: exitCodeEmail } = yield (0, exec_1.getExecOutput)(`git config --global user.email "${email}"`, [], { silent: true });
         if (exitCodeEmail !== 0)
             throw new Error('Could not set git commiter email');
+        core.info('Git commiter identity set.');
         core.endGroup();
     }
     catch (e) {
@@ -207,12 +211,14 @@ const tagCommit = (nextVersion, isReleaseCandidate) => __awaiter(void 0, void 0,
     try {
         yield setGitCommiter();
         core.startGroup(`Tagging ${isReleaseCandidate ? 'release candidate' : 'version'} ${nextVersion}`);
-        const { exitCode: tagExitCode } = yield (0, exec_1.getExecOutput)(`git tag -a ${nextVersion}${isReleaseCandidate ? '-rc' : ''}`);
+        const version = `${nextVersion}${isReleaseCandidate ? '-rc' : ''}`;
+        const { exitCode: tagExitCode } = yield (0, exec_1.getExecOutput)(`git tag -a ${version} -m "Release ${nextVersion}"`);
         if (tagExitCode !== 0)
             throw Error;
         const { exitCode: pushExitCode } = yield (0, exec_1.getExecOutput)('git push --tags');
         if (pushExitCode !== 0)
             throw Error;
+        core.info(`Git tag ${version} pushed.`);
         core.endGroup();
     }
     catch (e) {
@@ -230,6 +236,7 @@ const deleteTag = (tag) => __awaiter(void 0, void 0, void 0, function* () {
         const { exitCode: pushExitCode } = yield (0, exec_1.getExecOutput)(`git push --delete origin ${tag}`);
         if (pushExitCode !== 0)
             throw Error;
+        core.info(`Git tag ${tag} deleted.`);
         core.endGroup();
     }
     catch (e) {
