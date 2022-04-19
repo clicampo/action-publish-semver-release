@@ -18,7 +18,6 @@ export const getLastGitTag = async(considerReleaseCandidates: boolean): Promise<
                 Boolean(ref) && considerReleaseCandidates ? true : !ref.includes('-rc'),
             )
             .reverse()
-        console.log(filteredTags.at(0), filteredTags.at(0)?.split('/').at(-1))
         const lastGitTag = filteredTags
             .at(0)
             ?.split('/')
