@@ -147,21 +147,23 @@ exports.deleteTag = exports.tagCommit = exports.getLastCommitMessage = exports.g
 const exec_1 = __nccwpck_require__(7000);
 const core = __importStar(__nccwpck_require__(3031));
 const getLastGitTag = (considerReleaseCandidates) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
     try {
         core.startGroup('Getting last git tag');
         const { stdout: gitTagList, exitCode } = yield (0, exec_1.getExecOutput)('git for-each-ref --sort=creatordate --format "%(refname)" refs/tags');
         if (exitCode !== 0)
             throw Error;
         const filteredTags = gitTagList
+            .trim()
             .split('\n')
             .filter(ref => 
         // Ensure that the line isn't empty, then check against
         // the release candidate option input
-        Boolean(ref) && considerReleaseCandidates ? true : !ref.includes('-rc'));
-        const lastGitTag = filteredTags
-            .reverse()[0]
-            .split('/')
-            .pop();
+        Boolean(ref) && considerReleaseCandidates ? true : !ref.includes('-rc'))
+            .reverse();
+        console.log(filteredTags.at(0), (_a = filteredTags.at(0)) === null || _a === void 0 ? void 0 : _a.split('/').at(-1));
+        const lastGitTag = (_b = filteredTags
+            .at(0)) === null || _b === void 0 ? void 0 : _b.split('/').at(-1);
         if (lastGitTag === undefined || lastGitTag === '') {
             core.info('No git tag found.');
             throw Error;

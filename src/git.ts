@@ -10,16 +10,20 @@ export const getLastGitTag = async(considerReleaseCandidates: boolean): Promise<
         if (exitCode !== 0)
             throw Error
         const filteredTags = gitTagList
+            .trim()
             .split('\n')
             .filter(ref =>
                 // Ensure that the line isn't empty, then check against
                 // the release candidate option input
                 Boolean(ref) && considerReleaseCandidates ? true : !ref.includes('-rc'),
             )
+            .reverse()
+        console.log(filteredTags.at(0), filteredTags.at(0)?.split('/').at(-1))
         const lastGitTag = filteredTags
-            .reverse()[0]
-            .split('/')
-            .pop()
+            .at(0)
+            ?.split('/')
+            .at(-1)
+
         if (lastGitTag === undefined || lastGitTag === '') {
             core.info('No git tag found.')
             throw Error
