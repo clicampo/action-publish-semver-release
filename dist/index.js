@@ -149,9 +149,10 @@ const core = __importStar(__nccwpck_require__(3031));
 const getLastGitTag = (considerReleaseCandidates) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         core.startGroup('Getting last git tag');
-        const { stdout: gitTagList, exitCode } = yield (0, exec_1.getExecOutput)('git for-each-ref --sort=creatordate --format "%(refname)" refs/tags', [], { silent: true });
+        const { stdout: gitTagList, exitCode } = yield (0, exec_1.getExecOutput)('git for-each-ref --sort=creatordate --format "%(refname)" refs/tags');
         if (exitCode !== 0)
             throw Error;
+        core.info(gitTagList);
         const lastGitTag = gitTagList
             .split('\n')
             .filter(ref => considerReleaseCandidates ? true : !ref.includes('-rc'))
@@ -175,7 +176,7 @@ exports.getLastGitTag = getLastGitTag;
 const getLastCommitMessage = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         core.startGroup('Getting last commit message');
-        const { stdout: lastCommitMessage, exitCode } = yield (0, exec_1.getExecOutput)('git log -1 --pretty=%B --no-merges', [], { silent: true });
+        const { stdout: lastCommitMessage, exitCode } = yield (0, exec_1.getExecOutput)('git log -1 --pretty=%B --no-merges');
         if (exitCode !== 0)
             throw Error;
         core.endGroup();

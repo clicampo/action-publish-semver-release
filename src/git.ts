@@ -6,11 +6,10 @@ export const getLastGitTag = async(considerReleaseCandidates: boolean): Promise<
         core.startGroup('Getting last git tag')
         const { stdout: gitTagList, exitCode } = await getExecOutput(
             'git for-each-ref --sort=creatordate --format "%(refname)" refs/tags',
-            [],
-            { silent: true },
         )
         if (exitCode !== 0)
             throw Error
+        core.info(gitTagList)
         const lastGitTag = gitTagList
             .split('\n')
             .filter(ref => considerReleaseCandidates ? true : !ref.includes('-rc'))
@@ -36,8 +35,6 @@ export const getLastCommitMessage = async(): Promise<string | null> => {
         core.startGroup('Getting last commit message')
         const { stdout: lastCommitMessage, exitCode } = await getExecOutput(
             'git log -1 --pretty=%B --no-merges',
-            [],
-            { silent: true },
         )
         if (exitCode !== 0)
             throw Error
