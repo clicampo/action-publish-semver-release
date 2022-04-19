@@ -156,10 +156,16 @@ const getLastGitTag = (considerReleaseCandidates) => __awaiter(void 0, void 0, v
         const filteredTags = gitTagList
             .trim()
             .split('\n')
-            .filter(ref => 
-        // Ensure that the line isn't empty, then check against
-        // the release candidate option input
-        Boolean(ref) && considerReleaseCandidates ? true : !ref.includes('-rc'))
+            .filter(ref => {
+            var _a;
+            // Ensure that the line isn't empty, then check against
+            // the release candidate option input
+            return Boolean(ref)
+                && ((_a = ref.split('/').at(-1)) === null || _a === void 0 ? void 0 : _a.match(/^v?\d+\.\d+\.\d+(-[\w\d]+)?$/)) !== null
+                && considerReleaseCandidates
+                ? true
+                : !ref.includes('-rc');
+        })
             .reverse();
         const lastGitTag = (_a = filteredTags
             .at(0)) === null || _a === void 0 ? void 0 : _a.split('/').at(-1);

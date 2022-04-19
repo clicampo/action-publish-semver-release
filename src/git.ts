@@ -15,7 +15,11 @@ export const getLastGitTag = async(considerReleaseCandidates: boolean): Promise<
             .filter(ref =>
                 // Ensure that the line isn't empty, then check against
                 // the release candidate option input
-                Boolean(ref) && considerReleaseCandidates ? true : !ref.includes('-rc'),
+                Boolean(ref)
+                && ref.split('/').at(-1)?.match(/^v?\d+\.\d+\.\d+(-[\w\d]+)?$/) !== null
+                && considerReleaseCandidates
+                    ? true
+                    : !ref.includes('-rc'),
             )
             .reverse()
         const lastGitTag = filteredTags
