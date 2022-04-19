@@ -16,7 +16,7 @@ export const getLastGitTag = async(considerReleaseCandidates: boolean): Promise<
             .reverse()[0]
             .split('/')
             .pop()
-        if (lastGitTag === undefined) {
+        if (lastGitTag === undefined || lastGitTag === '') {
             core.info('No git tag found.')
             throw Error
         }

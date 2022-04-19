@@ -1,3 +1,4 @@
+import * as core from '@actions/core'
 export type ReleaseType = 'patch' | 'minor' | 'major'
 
 export const getReleaseTypeFromCommitMessage = (commitMessage: string): ReleaseType | null => {
@@ -11,6 +12,12 @@ export const getReleaseTypeFromCommitMessage = (commitMessage: string): ReleaseT
 }
 
 export const getNextVersion = (currentVersion: string, releaseType: ReleaseType): string => {
+    // verify that the current version is valid semver
+    if (currentVersion.match(/^\d+\.\d+\.\d+(-[\w\d]+)?$/) === null) {
+        core.error(`Invalid current version: ${currentVersion}`)
+        throw Error
+    }
+
     const pureVersion = currentVersion.split('-')[0]
     const [major, minor, patch] = pureVersion.split('.').map(Number)
     return ({
