@@ -5,6 +5,18 @@ inputs:
     github-token:
         required: true
         description: GitHub personal access token
+    git-committer-name:
+        required: true
+        description: Git committer name
+        default: Publish SemVer release action
+    git-committer-email:
+        required: true
+        description: Git committer email
+        default: publish-semver@github.com
+    release-candidate:
+        required: false
+        description: Determines if the release is a release candidate
+        default: 'true'
 outputs:
     next-version:
         description: Next version to be released
