@@ -111,6 +111,7 @@ export const generateChangelog = async(context: Context, considerReleaseCandidat
     const lastCommits = await getLastCommits(context, considerReleaseCandidates)
     const commitsByType = groupCommitsByReleaseType(lastCommits)
     const formattedChangelog = formatCommitsByType(commitsByType)
+    core.info(formattedChangelog)
     core.endGroup()
     return formattedChangelog
 }

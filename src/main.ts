@@ -9,7 +9,7 @@ async function run(): Promise<void> {
     const isReleaseCandidate = core.getInput('release-candidate') === 'true'
 
     try {
-        const lastVersion = await getLastGitTag(isReleaseCandidate)
+        const lastVersion = await getLastGitTag(isReleaseCandidate, true)
         if (lastVersion === null)
             return
 

@@ -134,6 +134,7 @@ const generateChangelog = (context, considerReleaseCandidates) => __awaiter(void
     const lastCommits = yield getLastCommits(context, considerReleaseCandidates);
     const commitsByType = groupCommitsByReleaseType(lastCommits);
     const formattedChangelog = formatCommitsByType(commitsByType);
+    core.info(formattedChangelog);
     core.endGroup();
     return formattedChangelog;
 });
@@ -183,10 +184,11 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.deleteTag = exports.tagCommit = exports.getLastCommitMessage = exports.getLastGitTag = void 0;
 const exec_1 = __nccwpck_require__(7000);
 const core = __importStar(__nccwpck_require__(3031));
-const getLastGitTag = (considerReleaseCandidates) => __awaiter(void 0, void 0, void 0, function* () {
+const getLastGitTag = (considerReleaseCandidates, logInGroup = false) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
-        core.startGroup('Getting last git tag');
+        if (logInGroup)
+            core.startGroup('Getting last git tag');
         const { stdout: gitTagList, exitCode } = yield (0, exec_1.getExecOutput)('git for-each-ref --sort=creatordate --format "%(refname)" refs/tags');
         if (exitCode !== 0)
             throw Error;
@@ -211,7 +213,8 @@ const getLastGitTag = (considerReleaseCandidates) => __awaiter(void 0, void 0, v
             throw Error;
         }
         core.info(`Last git tag: ${lastGitTag}`);
-        core.endGroup();
+        if (logInGroup)
+            core.endGroup();
         return lastGitTag;
     }
     catch (e) {
@@ -420,7 +423,7 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const isReleaseCandidate = core.getInput('release-candidate') === 'true';
         try {
-            const lastVersion = yield (0, git_1.getLastGitTag)(isReleaseCandidate);
+            const lastVersion = yield (0, git_1.getLastGitTag)(isReleaseCandidate, true);
             if (lastVersion === null)
                 return;
             const lastCommitMessage = yield (0, git_1.getLastCommitMessage)();
