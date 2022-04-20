@@ -2,6 +2,8 @@ import { getInput } from '@actions/core'
 import { getExecOutput } from '@actions/exec'
 import { getOctokit } from '@actions/github'
 import type { Context } from '@actions/github/lib/context'
+import * as core from '@actions/core'
+import { getLastGitTag } from './git'
 import type { ReleaseType } from './version'
 import { getReleaseTypeFromCommitMessage } from './version'
 
@@ -14,7 +16,7 @@ ReturnType<typeof getOctokit>['rest']['repos']['listCommits']
 
 const run = async(command: string) => (await getExecOutput(command)).stdout
 
-const getLastCommits = async(context: Context) => {
+const getLastCommits = async(context: Context, considerReleaseCandidates: boolean) => {
     const githubToken = getInput('github-token') || process.env.GH_TOKEN
     if (githubToken === '' || githubToken === undefined)
         throw new Error('GitHub token is required')
@@ -22,16 +24,24 @@ const getLastCommits = async(context: Context) => {
     const github = getOctokit(githubToken).rest
 
     // get the sha of the last tagged commit
-    const lastTag = await run('git describe --tags --abbrev=0')
+    const lastTag = await getLastGitTag(considerReleaseCandidates)
     const lastTaggedCommitSha = await run(`git rev-list -n 1 ${lastTag}`)
+    const lastTaggedCommitDate = await run(`git show -s --format=%ci ${lastTaggedCommitSha}`)
+    core.info(`Getting commits since ${lastTaggedCommitDate} [${lastTag}](${lastTaggedCommitSha})`)
 
     const { data: commits } = await github.repos.listCommits({
         owner: context.repo.owner,
         repo: context.repo.repo,
+        since: lastTaggedCommitDate,
     })
 
+    const commitsSortedByDateDesc = commits.sort((a, b) => {
+        const aDate = new Date(String(a.commit.author?.date))
+        const bDate = new Date(String(b.commit.author?.date))
+        return bDate.getTime() - aDate.getTime()
+    })
     const lastCommits = []
-    for (const commit of commits) {
+    for (const commit of commitsSortedByDateDesc) {
         if (commit.sha === lastTaggedCommitSha)
             break
         lastCommits.push(commit)
@@ -96,8 +106,11 @@ const formatCommitsByType = (commitsByType: CommitsByReleaseType) => {
     return changelog
 }
 
-export const generateChangelog = async(context: Context) => {
-    const lastCommits = await getLastCommits(context)
+export const generateChangelog = async(context: Context, considerReleaseCandidates: boolean) => {
+    core.startGroup('Generating changelog')
+    const lastCommits = await getLastCommits(context, considerReleaseCandidates)
     const commitsByType = groupCommitsByReleaseType(lastCommits)
-    return formatCommitsByType(commitsByType)
+    const formattedChangelog = formatCommitsByType(commitsByType)
+    core.endGroup()
+    return formattedChangelog
 }
