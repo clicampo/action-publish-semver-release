@@ -6,6 +6,29 @@ require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -20,22 +43,33 @@ exports.generateChangelog = void 0;
 const core_1 = __nccwpck_require__(3031);
 const exec_1 = __nccwpck_require__(7000);
 const github_1 = __nccwpck_require__(2737);
+const core = __importStar(__nccwpck_require__(3031));
+const git_1 = __nccwpck_require__(3008);
 const version_1 = __nccwpck_require__(2308);
 const run = (command) => __awaiter(void 0, void 0, void 0, function* () { return (yield (0, exec_1.getExecOutput)(command)).stdout; });
-const getLastCommits = (context) => __awaiter(void 0, void 0, void 0, function* () {
+const getLastCommits = (context, considerReleaseCandidates) => __awaiter(void 0, void 0, void 0, function* () {
     const githubToken = (0, core_1.getInput)('github-token') || process.env.GH_TOKEN;
     if (githubToken === '' || githubToken === undefined)
         throw new Error('GitHub token is required');
     const github = (0, github_1.getOctokit)(githubToken).rest;
     // get the sha of the last tagged commit
-    const lastTag = yield run('git describe --tags --abbrev=0');
+    const lastTag = yield (0, git_1.getLastGitTag)(considerReleaseCandidates);
     const lastTaggedCommitSha = yield run(`git rev-list -n 1 ${lastTag}`);
+    const lastTaggedCommitDate = yield run(`git show -s --format=%ci ${lastTaggedCommitSha}`);
+    core.info(`Getting commits since ${lastTaggedCommitDate} [${lastTag}](${lastTaggedCommitSha})`);
     const { data: commits } = yield github.repos.listCommits({
         owner: context.repo.owner,
         repo: context.repo.repo,
+        since: lastTaggedCommitDate,
+    });
+    const commitsSortedByDateDesc = commits.sort((a, b) => {
+        var _a, _b;
+        const aDate = new Date(String((_a = a.commit.author) === null || _a === void 0 ? void 0 : _a.date));
+        const bDate = new Date(String((_b = b.commit.author) === null || _b === void 0 ? void 0 : _b.date));
+        return bDate.getTime() - aDate.getTime();
     });
     const lastCommits = [];
-    for (const commit of commits) {
+    for (const commit of commitsSortedByDateDesc) {
         if (commit.sha === lastTaggedCommitSha)
             break;
         lastCommits.push(commit);
@@ -95,10 +129,13 @@ const formatCommitsByType = (commitsByType) => {
     }
     return changelog;
 };
-const generateChangelog = (context) => __awaiter(void 0, void 0, void 0, function* () {
-    const lastCommits = yield getLastCommits(context);
+const generateChangelog = (context, considerReleaseCandidates) => __awaiter(void 0, void 0, void 0, function* () {
+    core.startGroup('Generating changelog');
+    const lastCommits = yield getLastCommits(context, considerReleaseCandidates);
     const commitsByType = groupCommitsByReleaseType(lastCommits);
-    return formatCommitsByType(commitsByType);
+    const formattedChangelog = formatCommitsByType(commitsByType);
+    core.endGroup();
+    return formattedChangelog;
 });
 exports.generateChangelog = generateChangelog;
 
@@ -394,10 +431,7 @@ function run() {
             if (releaseType !== null) {
                 const nextVersion = (0, version_1.getNextVersion)(lastVersion, releaseType);
                 core.info(`Publishing a release candidate for version ${nextVersion}`);
-                core.startGroup('Generating changelog');
-                const changelog = yield (0, changelog_1.generateChangelog)(github_1.context);
-                core.info(changelog);
-                core.endGroup();
+                const changelog = yield (0, changelog_1.generateChangelog)(github_1.context, isReleaseCandidate);
                 // Tag commit with the next version release candidate
                 yield (0, git_1.tagCommit)(nextVersion, isReleaseCandidate);
                 yield (0, github_2.createGithubRelease)(github_1.context, nextVersion, changelog, isReleaseCandidate);
