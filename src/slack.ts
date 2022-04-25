@@ -1,3 +1,5 @@
+import fetch from 'node-fetch'
+
 export const notifySlackChannel = async(webhookUrl: string, options: { projectName: string; nextVersion: string; changelog: string; isReleaseCandidate: boolean }) => {
     const version = options.nextVersion + (options.isReleaseCandidate ? '-rc' : '')
     const summaryBlock = {
