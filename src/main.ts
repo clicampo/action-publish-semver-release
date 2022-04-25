@@ -35,6 +35,8 @@ async function run(): Promise<void> {
             if (slackWebhookUrl !== '') {
                 await notifySlackChannel(slackWebhookUrl, {
                     projectName: context.repo.repo,
+                    projectUrl: core.getInput('project-url'),
+                    productionActionUrl: core.getInput('production-action-url'),
                     nextVersion,
                     changelog,
                     isReleaseCandidate,

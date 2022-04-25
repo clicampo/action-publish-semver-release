@@ -20,6 +20,12 @@ inputs:
     slack-webhook-url:
         required: false
         description: A webhook URL of a Slack channel that if provided, will notify the release
+    project-url:
+        required: false
+        description: A URL of the project that will be used in the slack notification
+    production-action-url:
+        required: false
+        description: A URL of the production deployment action that will be used in the slack notification
 outputs:
     next-version:
         description: Next version to be released

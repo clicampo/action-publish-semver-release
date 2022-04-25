@@ -442,6 +442,8 @@ function run() {
                 if (slackWebhookUrl !== '') {
                     yield (0, slack_1.notifySlackChannel)(slackWebhookUrl, {
                         projectName: github_1.context.repo.repo,
+                        projectUrl: core.getInput('project-url'),
+                        productionActionUrl: core.getInput('production-action-url'),
                         nextVersion,
                         changelog,
                         isReleaseCandidate,
@@ -491,7 +493,7 @@ const notifySlackChannel = (webhookUrl, options) => __awaiter(void 0, void 0, vo
         type: 'section',
         text: {
             type: 'mrkdwn',
-            text: `The project **${options.projectName}** has just released the version **${version}**!`,
+            text: `The project *<${options.projectUrl}|${options.projectName}>* has just released the version *${version}*!`,
         },
     };
     const changelogBlock = {
@@ -502,7 +504,9 @@ const notifySlackChannel = (webhookUrl, options) => __awaiter(void 0, void 0, vo
                 // replace headings with bold text
                 .replace(/#+ ([^\n]+)/g, '*$1*')
                 // replace links with slack link syntax
-                .replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<$2|$1>'),
+                .replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<$2|$1>')
+                // replace - with →
+                .replace(/\-/g, '→'),
         },
     };
     const payload = {
@@ -511,18 +515,18 @@ const notifySlackChannel = (webhookUrl, options) => __awaiter(void 0, void 0, vo
                 type: 'header',
                 text: {
                     type: 'plain_text',
-                    text: 'New release!',
+                    text: ':rocket: New release!',
                     emoji: true,
                 },
             },
             summaryBlock,
             changelogBlock,
-            options.isReleaseCandidate
+            options.isReleaseCandidate && options.productionActionUrl
                 ? {
                     type: 'section',
                     text: {
                         type: 'mrkdwn',
-                        text: '⚠️ This is a release candidate',
+                        text: '_⚠️ This is a release candidate_',
                     },
                     accessory: {
                         type: 'button',
@@ -532,7 +536,7 @@ const notifySlackChannel = (webhookUrl, options) => __awaiter(void 0, void 0, vo
                             emoji: true,
                         },
                         value: 'n/a',
-                        url: 'https://google.com',
+                        url: options.productionActionUrl,
                         action_id: 'n/a',
                     },
                 }
