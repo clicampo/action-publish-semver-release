@@ -17,6 +17,9 @@ inputs:
         required: false
         description: Determines if the release is a release candidate
         default: 'true'
+    slack-webhook-url:
+        required: false
+        description: A webhook URL of a Slack channel that if provided, will notify the release
 outputs:
     next-version:
         description: Next version to be released

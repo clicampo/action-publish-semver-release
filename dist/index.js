@@ -418,10 +418,12 @@ const github_1 = __nccwpck_require__(2737);
 const changelog_1 = __nccwpck_require__(6293);
 const git_1 = __nccwpck_require__(3008);
 const github_2 = __nccwpck_require__(6742);
+const slack_1 = __nccwpck_require__(2657);
 const version_1 = __nccwpck_require__(2308);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const isReleaseCandidate = core.getInput('release-candidate') === 'true';
+        const slackWebhookUrl = core.getInput('slack-webhook-url');
         try {
             const lastVersion = yield (0, git_1.getLastGitTag)(isReleaseCandidate, true);
             if (lastVersion === null)
@@ -435,9 +437,16 @@ function run() {
                 const nextVersion = (0, version_1.getNextVersion)(lastVersion, releaseType);
                 core.info(`Publishing a release candidate for version ${nextVersion}`);
                 const changelog = yield (0, changelog_1.generateChangelog)(github_1.context, isReleaseCandidate);
-                // Tag commit with the next version release candidate
                 yield (0, git_1.tagCommit)(nextVersion, isReleaseCandidate);
                 yield (0, github_2.createGithubRelease)(github_1.context, nextVersion, changelog, isReleaseCandidate);
+                if (slackWebhookUrl !== '') {
+                    yield (0, slack_1.notifySlackChannel)(slackWebhookUrl, {
+                        projectName: github_1.context.repo.repo,
+                        nextVersion,
+                        changelog,
+                        isReleaseCandidate,
+                    });
+                }
                 core.setOutput('next-version', nextVersion);
                 core.setOutput('release-type', releaseType);
             }
@@ -452,6 +461,86 @@ function run() {
     });
 }
 run();
+
+
+/***/ }),
+
+/***/ 2657:
+/***/ (function(__unused_webpack_module, exports) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.notifySlackChannel = void 0;
+const notifySlackChannel = (webhookUrl, options) => __awaiter(void 0, void 0, void 0, function* () {
+    const version = options.nextVersion + (options.isReleaseCandidate ? '-rc' : '');
+    const summaryBlock = {
+        type: 'section',
+        text: {
+            type: 'mrkdwn',
+            text: `The project **${options.projectName}** has just released the version **${version}**!`,
+        },
+    };
+    const changelogBlock = {
+        type: 'section',
+        text: {
+            type: 'mrkdwn',
+            text: options.changelog.replace(/#+ ([^\n]+)/g, '**$1**'),
+        },
+    };
+    const payload = {
+        blocks: [
+            {
+                type: 'header',
+                text: {
+                    type: 'plain_text',
+                    text: 'New release!',
+                    emoji: true,
+                },
+            },
+            summaryBlock,
+            changelogBlock,
+            options.isReleaseCandidate
+                ? {
+                    type: 'section',
+                    text: {
+                        type: 'mrkdwn',
+                        text: '⚠️ This is a release candidate',
+                    },
+                    accessory: {
+                        type: 'button',
+                        text: {
+                            type: 'plain_text',
+                            text: 'Deploy to production',
+                            emoji: true,
+                        },
+                        value: 'n/a',
+                        url: 'https://google.com',
+                        action_id: 'n/a',
+                    },
+                }
+                : undefined,
+        ].filter(Boolean),
+    };
+    const response = yield fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+    return response;
+});
+exports.notifySlackChannel = notifySlackChannel;
 
 
 /***/ }),

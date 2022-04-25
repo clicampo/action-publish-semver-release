@@ -3,10 +3,12 @@ import { context } from '@actions/github'
 import { generateChangelog } from './changelog'
 import { getLastCommitMessage, getLastGitTag, tagCommit } from './git'
 import { createGithubRelease } from './github'
+import { notifySlackChannel } from './slack'
 import { getNextVersion, getReleaseTypeFromCommitMessage } from './version'
 
 async function run(): Promise<void> {
     const isReleaseCandidate = core.getInput('release-candidate') === 'true'
+    const slackWebhookUrl = core.getInput('slack-webhook-url')
 
     try {
         const lastVersion = await getLastGitTag(isReleaseCandidate, true)
@@ -26,10 +28,18 @@ async function run(): Promise<void> {
 
             const changelog = await generateChangelog(context, isReleaseCandidate)
 
-            // Tag commit with the next version release candidate
             await tagCommit(nextVersion, isReleaseCandidate)
 
             await createGithubRelease(context, nextVersion, changelog, isReleaseCandidate)
+
+            if (slackWebhookUrl !== '') {
+                await notifySlackChannel(slackWebhookUrl, {
+                    projectName: context.repo.repo,
+                    nextVersion,
+                    changelog,
+                    isReleaseCandidate,
+                })
+            }
 
             core.setOutput('next-version', nextVersion)
             core.setOutput('release-type', releaseType)
