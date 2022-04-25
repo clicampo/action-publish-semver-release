@@ -498,7 +498,11 @@ const notifySlackChannel = (webhookUrl, options) => __awaiter(void 0, void 0, vo
         type: 'section',
         text: {
             type: 'mrkdwn',
-            text: options.changelog.replace(/#+ ([^\n]+)/g, '**$1**'),
+            text: options.changelog
+                // replace headings with bold text
+                .replace(/#+ ([^\n]+)/g, '*$1*')
+                // replace links with slack link syntax
+                .replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<$2|$1>'),
         },
     };
     const payload = {
