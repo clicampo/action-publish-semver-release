@@ -26,7 +26,7 @@ async function run(): Promise<void> {
             const nextVersion = getNextVersion(lastVersion, releaseType)
             core.info(`Publishing a release candidate for version ${nextVersion}`)
 
-            const changelog = await generateChangelog(context, isReleaseCandidate)
+            const changelog = await generateChangelog(context)
 
             await tagCommit(nextVersion, isReleaseCandidate)
 

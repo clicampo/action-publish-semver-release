@@ -1,4 +1,5 @@
 import fetch from 'node-fetch'
+import * as core from '@actions/core'
 
 export const notifySlackChannel = async(webhookUrl: string, options: {
     projectName: string
@@ -8,6 +9,7 @@ export const notifySlackChannel = async(webhookUrl: string, options: {
     changelog: string
     isReleaseCandidate: boolean
 }) => {
+    core.startGroup('Notifying Slack channel')
     const version = options.nextVersion + (options.isReleaseCandidate ? '-rc' : '')
     const summaryBlock = {
         type: 'section',
@@ -63,6 +65,7 @@ export const notifySlackChannel = async(webhookUrl: string, options: {
                 : undefined,
         ].filter(Boolean),
     }
+    core.info(`Sending payload to Slack\n${JSON.stringify(payload, null, 4)}`)
     const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
@@ -70,5 +73,6 @@ export const notifySlackChannel = async(webhookUrl: string, options: {
         },
         body: JSON.stringify(payload),
     })
+    core.endGroup()
     return response
 }

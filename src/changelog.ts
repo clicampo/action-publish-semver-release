@@ -14,9 +14,9 @@ ReturnType<typeof getOctokit>['rest']['repos']['listCommits']
 >
 >['data']
 
-const run = async(command: string) => (await getExecOutput(command)).stdout
+const run = async(command: string) => (await getExecOutput(command)).stdout.trim()
 
-const getLastCommits = async(context: Context, considerReleaseCandidates: boolean) => {
+const getLastCommits = async(context: Context) => {
     const githubToken = getInput('github-token') || process.env.GH_TOKEN
     if (githubToken === '' || githubToken === undefined)
         throw new Error('GitHub token is required')
@@ -24,7 +24,7 @@ const getLastCommits = async(context: Context, considerReleaseCandidates: boolea
     const github = getOctokit(githubToken).rest
 
     // get the sha of the last tagged commit
-    const lastTag = await getLastGitTag(considerReleaseCandidates)
+    const lastTag = await getLastGitTag(false)
     const lastTaggedCommitSha = await run(`git rev-list -n 1 ${lastTag}`)
     const lastTaggedCommitDate = await run(`git show -s --format=%ci ${lastTaggedCommitSha}`)
     core.info(`Getting commits since ${lastTaggedCommitDate} [${lastTag}](${lastTaggedCommitSha})`)
@@ -106,9 +106,9 @@ const formatCommitsByType = (commitsByType: CommitsByReleaseType) => {
     return changelog
 }
 
-export const generateChangelog = async(context: Context, considerReleaseCandidates: boolean) => {
+export const generateChangelog = async(context: Context) => {
     core.startGroup('Generating changelog')
-    const lastCommits = await getLastCommits(context, considerReleaseCandidates)
+    const lastCommits = await getLastCommits(context)
     const commitsByType = groupCommitsByReleaseType(lastCommits)
     const formattedChangelog = formatCommitsByType(commitsByType)
     core.info(formattedChangelog)

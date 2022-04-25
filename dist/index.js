@@ -46,14 +46,14 @@ const github_1 = __nccwpck_require__(2737);
 const core = __importStar(__nccwpck_require__(3031));
 const git_1 = __nccwpck_require__(3008);
 const version_1 = __nccwpck_require__(2308);
-const run = (command) => __awaiter(void 0, void 0, void 0, function* () { return (yield (0, exec_1.getExecOutput)(command)).stdout; });
-const getLastCommits = (context, considerReleaseCandidates) => __awaiter(void 0, void 0, void 0, function* () {
+const run = (command) => __awaiter(void 0, void 0, void 0, function* () { return (yield (0, exec_1.getExecOutput)(command)).stdout.trim(); });
+const getLastCommits = (context) => __awaiter(void 0, void 0, void 0, function* () {
     const githubToken = (0, core_1.getInput)('github-token') || process.env.GH_TOKEN;
     if (githubToken === '' || githubToken === undefined)
         throw new Error('GitHub token is required');
     const github = (0, github_1.getOctokit)(githubToken).rest;
     // get the sha of the last tagged commit
-    const lastTag = yield (0, git_1.getLastGitTag)(considerReleaseCandidates);
+    const lastTag = yield (0, git_1.getLastGitTag)(false);
     const lastTaggedCommitSha = yield run(`git rev-list -n 1 ${lastTag}`);
     const lastTaggedCommitDate = yield run(`git show -s --format=%ci ${lastTaggedCommitSha}`);
     core.info(`Getting commits since ${lastTaggedCommitDate} [${lastTag}](${lastTaggedCommitSha})`);
@@ -129,9 +129,9 @@ const formatCommitsByType = (commitsByType) => {
     }
     return changelog;
 };
-const generateChangelog = (context, considerReleaseCandidates) => __awaiter(void 0, void 0, void 0, function* () {
+const generateChangelog = (context) => __awaiter(void 0, void 0, void 0, function* () {
     core.startGroup('Generating changelog');
-    const lastCommits = yield getLastCommits(context, considerReleaseCandidates);
+    const lastCommits = yield getLastCommits(context);
     const commitsByType = groupCommitsByReleaseType(lastCommits);
     const formattedChangelog = formatCommitsByType(commitsByType);
     core.info(formattedChangelog);
@@ -436,7 +436,7 @@ function run() {
             if (releaseType !== null) {
                 const nextVersion = (0, version_1.getNextVersion)(lastVersion, releaseType);
                 core.info(`Publishing a release candidate for version ${nextVersion}`);
-                const changelog = yield (0, changelog_1.generateChangelog)(github_1.context, isReleaseCandidate);
+                const changelog = yield (0, changelog_1.generateChangelog)(github_1.context);
                 yield (0, git_1.tagCommit)(nextVersion, isReleaseCandidate);
                 yield (0, github_2.createGithubRelease)(github_1.context, nextVersion, changelog, isReleaseCandidate);
                 if (slackWebhookUrl !== '') {
@@ -472,6 +472,29 @@ run();
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -487,7 +510,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.notifySlackChannel = void 0;
 const node_fetch_1 = __importDefault(__nccwpck_require__(6078));
+const core = __importStar(__nccwpck_require__(3031));
 const notifySlackChannel = (webhookUrl, options) => __awaiter(void 0, void 0, void 0, function* () {
+    core.startGroup('Notifying Slack channel');
     const version = options.nextVersion + (options.isReleaseCandidate ? '-rc' : '');
     const summaryBlock = {
         type: 'section',
@@ -543,6 +568,7 @@ const notifySlackChannel = (webhookUrl, options) => __awaiter(void 0, void 0, vo
                 : undefined,
         ].filter(Boolean),
     };
+    core.info(`Sending payload to Slack\n${JSON.stringify(payload, null, 4)}`);
     const response = yield (0, node_fetch_1.default)(webhookUrl, {
         method: 'POST',
         headers: {
@@ -550,6 +576,7 @@ const notifySlackChannel = (webhookUrl, options) => __awaiter(void 0, void 0, vo
         },
         body: JSON.stringify(payload),
     });
+    core.endGroup();
     return response;
 });
 exports.notifySlackChannel = notifySlackChannel;
