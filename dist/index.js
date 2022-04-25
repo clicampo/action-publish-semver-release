@@ -531,7 +531,7 @@ const notifySlackChannel = (webhookUrl, options) => __awaiter(void 0, void 0, vo
                 // replace links with slack link syntax
                 .replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<$2|$1>')
                 // replace - with →
-                .replace(/\-/g, '→'),
+                .replace(/^\-/g, '→'),
         },
     };
     const payload = {

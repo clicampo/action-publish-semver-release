@@ -28,7 +28,7 @@ export const notifySlackChannel = async(webhookUrl: string, options: {
                 // replace links with slack link syntax
                 .replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<$2|$1>')
                 // replace - with →
-                .replace(/\-/g, '→'),
+                .replace(/^\-/g, '→'),
         },
     }
     const payload = {
