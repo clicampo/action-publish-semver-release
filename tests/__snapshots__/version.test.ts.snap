@@ -1,0 +1,3 @@
+// Vitest Snapshot v1
+
+exports[`Version should > throw error if version is in the wrong format > "Invalid current version: foo" 1`] = `"Invalid current version: foo"`;
