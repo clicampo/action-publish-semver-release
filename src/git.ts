@@ -1,7 +1,7 @@
 import { getExecOutput } from '@actions/exec'
 import * as core from '@actions/core'
 
-export const getLastGitTag = async(considerReleaseCandidates: boolean, logInGroup = false): Promise<string | null> => {
+export const getLastGitTag = async(logInGroup = false): Promise<string | null> => {
     try {
         if (logInGroup)
             core.startGroup('Getting last git tag')
@@ -17,10 +17,7 @@ export const getLastGitTag = async(considerReleaseCandidates: boolean, logInGrou
                 // Ensure that the line isn't empty, then check against
                 // the release candidate option input
                 Boolean(ref)
-                && ref.split('/').at(-1)?.match(/^v?\d+\.\d+\.\d+(-[\w\d]+)?$/) !== null
-                && considerReleaseCandidates
-                    ? true
-                    : !ref.includes('-rc'),
+                && ref.split('/').at(-1)?.match(/^v?\d+\.\d+\.\d+(-[\w\d]+)?$/) !== null,
             )
             .reverse()
         const lastGitTag = filteredTags

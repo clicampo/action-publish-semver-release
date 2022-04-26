@@ -11,7 +11,7 @@ async function run(): Promise<void> {
     const slackWebhookUrl = core.getInput('slack-webhook-url')
 
     try {
-        const lastVersion = await getLastGitTag(isReleaseCandidate, true)
+        const lastVersion = await getLastGitTag(true)
         if (lastVersion === null)
             return
 

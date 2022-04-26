@@ -24,7 +24,7 @@ const getLastCommits = async(context: Context) => {
     const github = getOctokit(githubToken).rest
 
     // get the sha of the last tagged commit
-    const lastTag = await getLastGitTag(false)
+    const lastTag = await getLastGitTag()
     const lastTaggedCommitSha = await run(`git rev-list -n 1 ${lastTag}`)
     const lastTaggedCommitDate = await run(`git show -s --format=%ci ${lastTaggedCommitSha}`)
     core.info(`Getting commits since ${lastTaggedCommitDate} [${lastTag}](${lastTaggedCommitSha})`)
@@ -92,14 +92,14 @@ const formatCommitsByType = (commitsByType: CommitsByReleaseType) => {
         ]
         for (const commit of featureCommits) {
             const { message, scope, commitSha } = getCommitInfo(commit)
-            changelog += `- ${scope ? `**(${scope})**` : ''} ${message} ([${commitSha}](${commit.url}))\n`
+            changelog += `- ${scope ? `**${scope}**` : ''} ${message} ([${commitSha}](${commit.url}))\n`
         }
     }
     if (commitsByType.patch) {
         changelog += '\n### Bug Fixes\n'
         for (const commit of commitsByType.patch) {
             const { message, scope, commitSha } = getCommitInfo(commit)
-            changelog += `- ${scope ? `**(${scope})**` : ''} ${message} ([${commitSha}](${commit.url}))\n`
+            changelog += `- ${scope ? `**${scope}**` : ''} ${message} ([${commitSha}](${commit.url}))\n`
         }
     }
 
