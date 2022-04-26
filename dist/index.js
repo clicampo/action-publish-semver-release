@@ -425,11 +425,11 @@ function run() {
         const isReleaseCandidate = core.getInput('release-candidate') === 'true';
         const slackWebhookUrl = core.getInput('slack-webhook-url');
         try {
-            const lastVersion = yield (0, git_1.getLastGitTag)({
+            const currentVersion = yield (0, git_1.getLastGitTag)({
                 considerReleaseCandidates: true,
                 logInGroup: true,
             });
-            if (lastVersion === null)
+            if (currentVersion === null)
                 return;
             const lastCommitMessage = yield (0, git_1.getLastCommitMessage)();
             if (lastCommitMessage === null)
@@ -437,7 +437,9 @@ function run() {
             const releaseType = (0, version_1.getReleaseTypeFromCommitMessage)(lastCommitMessage);
             // If the commit isn't of type `feat` or `fix`, we don't want to bump the version
             if (releaseType !== null) {
-                const nextVersion = (0, version_1.getNextVersion)(lastVersion, releaseType);
+                const nextVersion = isReleaseCandidate
+                    ? (0, version_1.getNextVersion)({ currentVersion, releaseType })
+                    : (0, version_1.getPureVersion)(currentVersion);
                 core.info(`Publishing a release candidate for version ${nextVersion}`);
                 const changelog = yield (0, changelog_1.generateChangelog)(github_1.context);
                 yield (0, git_1.tagCommit)(nextVersion, isReleaseCandidate);
@@ -618,7 +620,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getNextVersion = exports.getReleaseTypeFromCommitMessage = void 0;
+exports.getPureVersion = exports.getNextVersion = exports.getReleaseTypeFromCommitMessage = void 0;
 const core = __importStar(__nccwpck_require__(3031));
 const getReleaseTypeFromCommitMessage = (commitMessage) => {
     if (/feat(\([^/)]+\))?!/.test(commitMessage))
@@ -630,21 +632,24 @@ const getReleaseTypeFromCommitMessage = (commitMessage) => {
     return null;
 };
 exports.getReleaseTypeFromCommitMessage = getReleaseTypeFromCommitMessage;
-const getNextVersion = (currentVersion, releaseType) => {
+const getNextVersion = (options) => {
     // verify that the current version is valid semver
-    if (currentVersion.match(/^\d+\.\d+\.\d+(-[\w\d]+)?$/) === null) {
-        core.error(`Invalid current version: ${currentVersion}`);
-        throw Error;
+    if (options.currentVersion.match(/^\d+\.\d+\.\d+(-[\w\d]+)?$/) === null) {
+        const errorMessage = `Invalid current version: ${options.currentVersion}`;
+        core.error(errorMessage);
+        throw new Error(errorMessage);
     }
-    const pureVersion = currentVersion.split('-')[0];
+    const pureVersion = options.currentVersion.split('-')[0];
     const [major, minor, patch] = pureVersion.split('.').map(Number);
     return ({
         major: () => `${major + 1}.0.0`,
         minor: () => `${major}.${minor + 1}.0`,
         patch: () => `${major}.${minor}.${patch + 1}`,
-    })[releaseType]();
+    })[options.releaseType]();
 };
 exports.getNextVersion = getNextVersion;
+const getPureVersion = (version) => version.split('-')[0];
+exports.getPureVersion = getPureVersion;
 
 
 /***/ }),

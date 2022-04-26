@@ -4,18 +4,18 @@ import { generateChangelog } from './changelog'
 import { getLastCommitMessage, getLastGitTag, tagCommit } from './git'
 import { createGithubRelease } from './github'
 import { notifySlackChannel } from './slack'
-import { getNextVersion, getReleaseTypeFromCommitMessage } from './version'
+import { getNextVersion, getPureVersion, getReleaseTypeFromCommitMessage } from './version'
 
 async function run(): Promise<void> {
     const isReleaseCandidate = core.getInput('release-candidate') === 'true'
     const slackWebhookUrl = core.getInput('slack-webhook-url')
 
     try {
-        const lastVersion = await getLastGitTag({
+        const currentVersion = await getLastGitTag({
             considerReleaseCandidates: true,
             logInGroup: true,
         })
-        if (lastVersion === null)
+        if (currentVersion === null)
             return
 
         const lastCommitMessage = await getLastCommitMessage()
@@ -26,7 +26,9 @@ async function run(): Promise<void> {
 
         // If the commit isn't of type `feat` or `fix`, we don't want to bump the version
         if (releaseType !== null) {
-            const nextVersion = getNextVersion(lastVersion, releaseType)
+            const nextVersion = isReleaseCandidate
+                ? getNextVersion({ currentVersion, releaseType })
+                : getPureVersion(currentVersion)
             core.info(`Publishing a release candidate for version ${nextVersion}`)
 
             const changelog = await generateChangelog(context)
