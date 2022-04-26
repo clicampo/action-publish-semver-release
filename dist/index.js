@@ -53,7 +53,7 @@ const getLastCommits = (context) => __awaiter(void 0, void 0, void 0, function* 
         throw new Error('GitHub token is required');
     const github = (0, github_1.getOctokit)(githubToken).rest;
     // get the sha of the last tagged commit
-    const lastTag = yield (0, git_1.getLastGitTag)(false);
+    const lastTag = yield (0, git_1.getLastGitTag)();
     const lastTaggedCommitSha = yield run(`git rev-list -n 1 ${lastTag}`);
     const lastTaggedCommitDate = yield run(`git show -s --format=%ci ${lastTaggedCommitSha}`);
     core.info(`Getting commits since ${lastTaggedCommitDate} [${lastTag}](${lastTaggedCommitSha})`);
@@ -117,14 +117,14 @@ const formatCommitsByType = (commitsByType) => {
         ];
         for (const commit of featureCommits) {
             const { message, scope, commitSha } = getCommitInfo(commit);
-            changelog += `- ${scope ? `**(${scope})**` : ''} ${message} ([${commitSha}](${commit.url}))\n`;
+            changelog += `- ${scope ? `**${scope}**` : ''} ${message} ([${commitSha}](${commit.url}))\n`;
         }
     }
     if (commitsByType.patch) {
         changelog += '\n### Bug Fixes\n';
         for (const commit of commitsByType.patch) {
             const { message, scope, commitSha } = getCommitInfo(commit);
-            changelog += `- ${scope ? `**(${scope})**` : ''} ${message} ([${commitSha}](${commit.url}))\n`;
+            changelog += `- ${scope ? `**${scope}**` : ''} ${message} ([${commitSha}](${commit.url}))\n`;
         }
     }
     return changelog;
@@ -184,7 +184,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.deleteTag = exports.tagCommit = exports.getLastCommitMessage = exports.getLastGitTag = void 0;
 const exec_1 = __nccwpck_require__(7000);
 const core = __importStar(__nccwpck_require__(3031));
-const getLastGitTag = (considerReleaseCandidates, logInGroup = false) => __awaiter(void 0, void 0, void 0, function* () {
+const getLastGitTag = (logInGroup = false) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
         if (logInGroup)
@@ -200,10 +200,7 @@ const getLastGitTag = (considerReleaseCandidates, logInGroup = false) => __await
             // Ensure that the line isn't empty, then check against
             // the release candidate option input
             return Boolean(ref)
-                && ((_a = ref.split('/').at(-1)) === null || _a === void 0 ? void 0 : _a.match(/^v?\d+\.\d+\.\d+(-[\w\d]+)?$/)) !== null
-                && considerReleaseCandidates
-                ? true
-                : !ref.includes('-rc');
+                && ((_a = ref.split('/').at(-1)) === null || _a === void 0 ? void 0 : _a.match(/^v?\d+\.\d+\.\d+(-[\w\d]+)?$/)) !== null;
         })
             .reverse();
         const lastGitTag = (_a = filteredTags
@@ -425,7 +422,7 @@ function run() {
         const isReleaseCandidate = core.getInput('release-candidate') === 'true';
         const slackWebhookUrl = core.getInput('slack-webhook-url');
         try {
-            const lastVersion = yield (0, git_1.getLastGitTag)(isReleaseCandidate, true);
+            const lastVersion = yield (0, git_1.getLastGitTag)(true);
             if (lastVersion === null)
                 return;
             const lastCommitMessage = yield (0, git_1.getLastCommitMessage)();
@@ -531,7 +528,9 @@ const notifySlackChannel = (webhookUrl, options) => __awaiter(void 0, void 0, vo
                 // replace links with slack link syntax
                 .replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<$2|$1>')
                 // replace - with →
-                .replace(/^\-/g, '→'),
+                .replace(/\- /g, '→')
+                // replace ** with *
+                .replace(/\*\*([^\*]+)\*\*/g, '*$1*'),
         },
     };
     const payload = {
