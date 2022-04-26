@@ -1,9 +1,12 @@
 import { getExecOutput } from '@actions/exec'
 import * as core from '@actions/core'
 
-export const getLastGitTag = async(logInGroup = false): Promise<string | null> => {
+export const getLastGitTag = async(options: {
+    considerReleaseCandidates: boolean
+    logInGroup?: boolean
+}): Promise<string | null> => {
     try {
-        if (logInGroup)
+        if (options.logInGroup)
             core.startGroup('Getting last git tag')
         const { stdout: gitTagList, exitCode } = await getExecOutput(
             'git for-each-ref --sort=creatordate --format "%(refname)" refs/tags',
@@ -17,7 +20,10 @@ export const getLastGitTag = async(logInGroup = false): Promise<string | null> =
                 // Ensure that the line isn't empty, then check against
                 // the release candidate option input
                 Boolean(ref)
-                && ref.split('/').at(-1)?.match(/^v?\d+\.\d+\.\d+(-[\w\d]+)?$/) !== null,
+                && ref.split('/').at(-1)?.match(/^v?\d+\.\d+\.\d+(-[\w\d]+)?$/) !== null
+                && options.considerReleaseCandidates
+                    ? true
+                    : !ref.includes('-rc'),
             )
             .reverse()
         const lastGitTag = filteredTags
@@ -30,7 +36,7 @@ export const getLastGitTag = async(logInGroup = false): Promise<string | null> =
             throw Error
         }
         core.info(`Last git tag: ${lastGitTag}`)
-        if (logInGroup)
+        if (options.logInGroup)
             core.endGroup()
         return lastGitTag
     }

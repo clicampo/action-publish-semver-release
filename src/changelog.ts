@@ -24,7 +24,7 @@ const getLastCommits = async(context: Context) => {
     const github = getOctokit(githubToken).rest
 
     // get the sha of the last tagged commit
-    const lastTag = await getLastGitTag()
+    const lastTag = await getLastGitTag({ considerReleaseCandidates: false })
     const lastTaggedCommitSha = await run(`git rev-list -n 1 ${lastTag}`)
     const lastTaggedCommitDate = await run(`git show -s --format=%ci ${lastTaggedCommitSha}`)
     core.info(`Getting commits since ${lastTaggedCommitDate} [${lastTag}](${lastTaggedCommitSha})`)
