@@ -6,7 +6,7 @@ export const getReleaseTypeFromCommitMessage = (commitMessage: string): ReleaseT
         return 'major'
     if (/feat/.test(commitMessage))
         return 'minor'
-    if (/fix/.test(commitMessage))
+    if (/fix/.test(commitMessage) || /chore/.test(commitMessage))
         return 'patch'
     return null
 }
