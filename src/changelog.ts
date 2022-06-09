@@ -102,6 +102,13 @@ const formatCommitsByType = (commitsByType: CommitsByReleaseType) => {
             changelog += `- ${scope ? `**${scope}**` : ''} ${message} ([${commitSha}](${commit.url}))\n`
         }
     }
+    if (commitsByType['non-release']) {
+        changelog += '\n### Other Changes\n'
+        for (const commit of commitsByType['non-release']) {
+            const { message, scope, commitSha } = getCommitInfo(commit)
+            changelog += `- ${scope ? `**${scope}**` : ''} ${message} ([${commitSha}](${commit.url}))\n`
+        }
+    }
 
     return changelog
 }
