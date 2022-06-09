@@ -1,6 +1,6 @@
 {
     "name": "publish-semver-release-action",
-    "version": "1.0.3",
+    "version": "1.1.0",
     "private": true,
     "description": "🚀 A GitHub action to publish a new release of the repository",
     "main": "lib/main.js",

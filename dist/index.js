@@ -127,6 +127,13 @@ const formatCommitsByType = (commitsByType) => {
             changelog += `- ${scope ? `**${scope}**` : ''} ${message} ([${commitSha}](${commit.url}))\n`;
         }
     }
+    if (commitsByType['non-release']) {
+        changelog += '\n### Other Changes\n';
+        for (const commit of commitsByType['non-release']) {
+            const { message, scope, commitSha } = getCommitInfo(commit);
+            changelog += `- ${scope ? `**${scope}**` : ''} ${message} ([${commitSha}](${commit.url}))\n`;
+        }
+    }
     return changelog;
 };
 const generateChangelog = (context) => __awaiter(void 0, void 0, void 0, function* () {
@@ -623,12 +630,14 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getPureVersion = exports.getNextVersion = exports.getReleaseTypeFromCommitMessage = void 0;
 const core = __importStar(__nccwpck_require__(3031));
 const getReleaseTypeFromCommitMessage = (commitMessage) => {
-    if (/feat(\([^/)]+\))?!/.test(commitMessage))
+    if (/^feat(\([^/)]+\))?!/.test(commitMessage))
         return 'major';
-    if (/feat/.test(commitMessage))
+    if (/^feat/.test(commitMessage))
         return 'minor';
-    if (/fix/.test(commitMessage))
+    if (/^fix/.test(commitMessage))
         return 'patch';
+    if (/^chore/.test(commitMessage) || /^ci/.test(commitMessage) || /^build/.test(commitMessage))
+        return 'non-release';
     return null;
 };
 exports.getReleaseTypeFromCommitMessage = getReleaseTypeFromCommitMessage;
@@ -642,9 +651,10 @@ const getNextVersion = (options) => {
     const pureVersion = options.currentVersion.split('-')[0];
     const [major, minor, patch] = pureVersion.split('.').map(Number);
     return ({
-        major: () => `${major + 1}.0.0`,
-        minor: () => `${major}.${minor + 1}.0`,
-        patch: () => `${major}.${minor}.${patch + 1}`,
+        'major': () => `${major + 1}.0.0`,
+        'minor': () => `${major}.${minor + 1}.0`,
+        'patch': () => `${major}.${minor}.${patch + 1}`,
+        'non-release': () => pureVersion,
     })[options.releaseType]();
 };
 exports.getNextVersion = getNextVersion;
