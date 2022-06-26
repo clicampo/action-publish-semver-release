@@ -14,7 +14,7 @@ export const notifyDiscordChannel = async(webhookUrl: string, options: {
     const payload = {
         username: '',
         avatar_url: '',
-        content: `The project **${options.projectName}>** has just released the version **${version}**!\n${
+        content: `The project **${options.projectName}** has just released the version **${version}**!\n${
             options.changelog
             // replace headings with bold text
                 .replace(/#+ ([^\n]+)/g, '**$1**')
@@ -33,6 +33,23 @@ export const notifyDiscordChannel = async(webhookUrl: string, options: {
     payload.embeds.push({
         title: 'Deploy to production',
         url: options.productionActionUrl,
+    })
+    payload.components.push({
+        type: '1',
+        components: [
+            {
+                type: 2,
+                style: 5,
+                label: 'See project',
+                url: options.projectUrl,
+            },
+            {
+                type: 2,
+                style: 5,
+                label: 'Deploy to production',
+                url: options.productionActionUrl,
+            },
+        ],
     })
 
     core.info(`Sending payload to Discord\n${JSON.stringify(payload, null, 4)}`)
