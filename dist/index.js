@@ -150,6 +150,106 @@ exports.generateChangelog = generateChangelog;
 
 /***/ }),
 
+/***/ 512:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.notifyDiscordChannel = void 0;
+const node_fetch_1 = __importDefault(__nccwpck_require__(6078));
+const core = __importStar(__nccwpck_require__(3031));
+const notifyDiscordChannel = (webhookUrl, options) => __awaiter(void 0, void 0, void 0, function* () {
+    core.startGroup('Notifying Discord channel');
+    const version = options.nextVersion + (options.isReleaseCandidate ? '-rc' : '');
+    const payload = {
+        username: '',
+        avatar_url: '',
+        content: `The project **${options.projectName}** has just released the version **${version}**!\n${options.changelog
+            // replace headings with bold text
+            .replace(/#+ ([^\n]+)/g, '**$1**')
+            // replace links with discord link syntax
+            .replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<$2|$1>')
+            .replace(/\- /g, '→')}`,
+        embeds: [],
+        components: [],
+    };
+    payload.embeds.push({
+        title: 'See project',
+        url: options.projectUrl,
+    });
+    payload.embeds.push({
+        title: 'Deploy to production',
+        url: options.productionActionUrl,
+    });
+    payload.components.push({
+        type: '1',
+        components: [
+            {
+                type: 2,
+                style: 5,
+                label: 'See project',
+                url: options.projectUrl,
+            },
+            {
+                type: 2,
+                style: 5,
+                label: 'Deploy to production',
+                url: options.productionActionUrl,
+            },
+        ],
+    });
+    core.info(`Sending payload to Discord\n${JSON.stringify(payload, null, 4)}`);
+    const response = yield (0, node_fetch_1.default)(webhookUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+    core.endGroup();
+    return response;
+});
+exports.notifyDiscordChannel = notifyDiscordChannel;
+
+
+/***/ }),
+
 /***/ 3008:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -423,6 +523,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(3031));
 const github_1 = __nccwpck_require__(2737);
 const changelog_1 = __nccwpck_require__(6293);
+const discord_1 = __nccwpck_require__(512);
 const git_1 = __nccwpck_require__(3008);
 const github_2 = __nccwpck_require__(6742);
 const slack_1 = __nccwpck_require__(2657);
@@ -431,6 +532,7 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const isReleaseCandidate = core.getInput('release-candidate') === 'true';
         const slackWebhookUrl = core.getInput('slack-webhook-url');
+        const discordWebhookUrl = core.getInput('discord-webhook-url');
         try {
             const currentVersion = yield (0, git_1.getLastGitTag)({
                 considerReleaseCandidates: true,
@@ -453,6 +555,16 @@ function run() {
                 yield (0, github_2.createGithubRelease)(github_1.context, nextVersion, changelog, isReleaseCandidate);
                 if (slackWebhookUrl !== '') {
                     yield (0, slack_1.notifySlackChannel)(slackWebhookUrl, {
+                        projectName: github_1.context.repo.repo,
+                        projectUrl: core.getInput('project-url'),
+                        productionActionUrl: core.getInput('production-action-url'),
+                        nextVersion,
+                        changelog,
+                        isReleaseCandidate,
+                    });
+                }
+                if (discordWebhookUrl !== '') {
+                    yield (0, discord_1.notifyDiscordChannel)(discordWebhookUrl, {
                         projectName: github_1.context.repo.repo,
                         projectUrl: core.getInput('project-url'),
                         productionActionUrl: core.getInput('production-action-url'),
