@@ -200,32 +200,14 @@ const notifyDiscordChannel = (webhookUrl, options) => __awaiter(void 0, void 0, 
     const payload = {
         username: '',
         avatar_url: '',
-        content: '**🔥 tá saindo do forninho versão nova**',
-        embeds: [],
-        components: [],
-    };
-    payload.embeds.push({
-        title: options.projectName,
-        color: 16711756,
-        description: options.changelog
+        content: `**🔥 tá saindo do forninho a versão ${version}**\n${options.changelog
             // replace headings with bold text
             .replace(/#+ ([^\n]+)/g, '*$1*')
             // replace links with slack link syntax
-            .replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<$2|$1>')
-            // replace - with →
-            .replace(/\- /g, '→')
-            // replace ** with *
-            .replace(/\*\*([^\*]+)\*\*/g, '*$1*'),
-        timestamp: '',
-        author: {
-            name: `↳ ${version}`,
-            url: options.projectUrl,
-        },
-        image: {},
-        thumbnail: {},
-        footer: {},
-        fields: [],
-    });
+            .replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<$2|$1>')}`,
+        embeds: [],
+        components: [],
+    };
     payload.components.push({
         type: 1,
         components: [

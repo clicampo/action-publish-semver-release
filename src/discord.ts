@@ -14,32 +14,16 @@ export const notifyDiscordChannel = async(webhookUrl: string, options: {
     const payload = {
         username: '',
         avatar_url: '',
-        content: '**🔥 tá saindo do forninho versão nova**',
+        content: `**🔥 tá saindo do forninho a versão ${version}**\n${
+            options.changelog
+            // replace headings with bold text
+                .replace(/#+ ([^\n]+)/g, '*$1*')
+            // replace links with slack link syntax
+                .replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<$2|$1>')
+        }`,
         embeds: [] as any[],
         components: [] as any[],
     }
-    payload.embeds.push({
-        title: options.projectName,
-        color: 16711756,
-        description: options.changelog
-            // replace headings with bold text
-            .replace(/#+ ([^\n]+)/g, '*$1*')
-            // replace links with slack link syntax
-            .replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<$2|$1>')
-            // replace - with →
-            .replace(/\- /g, '→')
-            // replace ** with *
-            .replace(/\*\*([^\*]+)\*\*/g, '*$1*'),
-        timestamp: '',
-        author: {
-            name: `↳ ${version}`,
-            url: options.projectUrl,
-        },
-        image: {},
-        thumbnail: {},
-        footer: {},
-        fields: [],
-    })
     payload.components.push({
         type: 1,
         components: [
