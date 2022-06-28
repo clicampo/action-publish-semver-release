@@ -40,6 +40,7 @@ const getLastCommits = async(context: Context) => {
         const bDate = new Date(String(b.commit.author?.date))
         return bDate.getTime() - aDate.getTime()
     })
+
     const lastCommits = []
     for (const commit of commitsSortedByDateDesc) {
         if (commit.sha === lastTaggedCommitSha)
@@ -47,7 +48,13 @@ const getLastCommits = async(context: Context) => {
         lastCommits.push(commit)
     }
 
-    return lastCommits
+    const lastCommitsSemverCompatible = lastCommits.filter((commit) => {
+        const commitMessage = commit.commit.message
+        const releaseType = getReleaseTypeFromCommitMessage(commitMessage)
+        return releaseType !== null
+    })
+
+    return lastCommitsSemverCompatible
 }
 
 const groupCommitsByReleaseType = (commits: CommitList) => {
