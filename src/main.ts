@@ -30,7 +30,11 @@ async function run(): Promise<void> {
         if (releaseType !== null) {
             const nextVersion = isReleaseCandidate
                 ? getNextVersion({ currentVersion, releaseType })
-                : getPureVersion(currentVersion)
+                : (
+                    currentVersion.match(/rc$/)
+                        ? getPureVersion(currentVersion)
+                        : getNextVersion({ currentVersion, releaseType })
+                )
             core.info(`Publishing a release candidate for version ${nextVersion}`)
 
             const changelog = await generateChangelog(context)

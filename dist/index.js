@@ -553,7 +553,9 @@ function run() {
             if (releaseType !== null) {
                 const nextVersion = isReleaseCandidate
                     ? (0, version_1.getNextVersion)({ currentVersion, releaseType })
-                    : (0, version_1.getPureVersion)(currentVersion);
+                    : (currentVersion.match(/rc$/)
+                        ? (0, version_1.getPureVersion)(currentVersion)
+                        : (0, version_1.getNextVersion)({ currentVersion, releaseType }));
                 core.info(`Publishing a release candidate for version ${nextVersion}`);
                 const changelog = yield (0, changelog_1.generateChangelog)(github_1.context);
                 yield (0, git_1.tagCommit)(nextVersion, isReleaseCandidate);
