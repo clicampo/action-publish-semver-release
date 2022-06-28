@@ -74,7 +74,12 @@ const getLastCommits = (context) => __awaiter(void 0, void 0, void 0, function* 
             break;
         lastCommits.push(commit);
     }
-    return lastCommits;
+    const lastCommitsSemverCompatible = lastCommits.filter((commit) => {
+        const commitMessage = commit.commit.message;
+        const releaseType = (0, version_1.getReleaseTypeFromCommitMessage)(commitMessage);
+        return releaseType !== null;
+    });
+    return lastCommitsSemverCompatible;
 });
 const groupCommitsByReleaseType = (commits) => {
     return commits
