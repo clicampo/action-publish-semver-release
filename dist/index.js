@@ -749,13 +749,13 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getPureVersion = exports.getNextVersion = exports.getReleaseTypeFromCommitMessage = void 0;
 const core = __importStar(__nccwpck_require__(3031));
 const getReleaseTypeFromCommitMessage = (commitMessage) => {
-    if (/^feat(\([^/)]+\))?!/.test(commitMessage))
+    if (/^feat(\([^/)]+\))?!/i.test(commitMessage))
         return 'major';
-    if (/^feat/.test(commitMessage))
+    if (/^feat/i.test(commitMessage))
         return 'minor';
-    if (/^fix/.test(commitMessage))
+    if (/^fix/i.test(commitMessage))
         return 'patch';
-    if (/^chore/.test(commitMessage) || /^ci/.test(commitMessage) || /^build/.test(commitMessage))
+    if (/^chore/i.test(commitMessage) || /^ci/i.test(commitMessage) || /^build/i.test(commitMessage))
         return 'non-release';
     return null;
 };
